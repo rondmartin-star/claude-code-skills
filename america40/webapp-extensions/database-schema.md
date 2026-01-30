@@ -26,6 +26,31 @@ CREATE TABLE users (
 
 ---
 
+### settings
+Encrypted credential storage for OAuth and API keys.
+
+```sql
+CREATE TABLE settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  is_encrypted INTEGER DEFAULT 0,  -- 1 if AES-256-GCM encrypted
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_by INTEGER,
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+```
+
+**Stored Keys:**
+- `google_client_id` - Google OAuth client ID (encrypted)
+- `google_client_secret` - Google OAuth client secret (encrypted)
+- `anthropic_api_key` - Anthropic API key (encrypted)
+- `session_secret` - Express session secret
+- `base_url` - Application base URL
+
+**Encryption:** AES-256-GCM with machine-specific key derived via PBKDF2.
+
+---
+
 ### comments
 Reviewer comments/annotations on artifacts.
 

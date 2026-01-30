@@ -90,11 +90,23 @@ IF task involves framework context lookup:
 
 ## API Endpoints (Reference Hub)
 
-- Comments: `POST/GET /api/comments`
+### Core
+- Setup: `GET /api/setup/status`, `POST /api/setup/configure`
+- Health: `GET /api/health`, `GET /api/health/live`, `GET /api/health/ready`
+- User: `GET /api/user`, `GET /api/admin/users`, `GET /api/admin/stats`
+
+### Content
+- Artifacts: `GET /api/artifacts`, `GET/PUT /api/artifacts/:type/:name`
+- Comments: `POST/GET /api/comments`, `GET /api/review/comments`
 - Plans: `POST /api/plans/generate`, `PUT /api/plans/:id/status`
 - Versions: `GET /api/artifacts/:type/:name/history`
-- Consistency: `POST /api/artifacts/:type/:name/preview-changes`
 - Drafts: `POST /api/drafts/generate`, `POST /api/drafts/:id/analyze-implications`
+
+### Operations
+- Consistency: `POST /api/artifacts/:type/:name/preview-changes`, `POST /api/consistency/scan`
+- Backups: `POST /api/backup`, `GET /api/backups`, `POST /api/restore`
+- Archive: `POST /api/archive/cleanup`
+- Claude: `POST /api/claude`
 
 ## Error Handling
 

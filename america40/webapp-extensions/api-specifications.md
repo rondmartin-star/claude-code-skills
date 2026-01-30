@@ -8,7 +8,8 @@ http://localhost:3000/api
 
 ## Authentication
 
-All endpoints require authentication via Google OAuth. Include session cookie from login.
+Most endpoints require authentication via Google OAuth. Include session cookie from login.
+Setup and health endpoints are public.
 
 ## Roles
 
@@ -16,8 +17,68 @@ All endpoints require authentication via Google OAuth. Include session cookie fr
 |------|-------------|
 | admin | Full access, user management, restore, delete |
 | editor | Create, edit, comment, generate plans and drafts |
-| viewer | Read-only access to artifacts |
+| viewer | Read-only access to artifacts, add comments |
 | pending | No access until approved |
+
+---
+
+## Setup Endpoints (Public)
+
+### GET /api/setup/status
+Check if initial configuration is required.
+
+**Response:**
+```json
+{
+  "setup_required": true,
+  "configured": {
+    "google_oauth": false,
+    "anthropic_api": false,
+    "session_secret": false,
+    "base_url": false
+  }
+}
+```
+
+### POST /api/setup/configure
+Save initial configuration. Credentials are encrypted with AES-256-GCM.
+
+**Request:**
+```json
+{
+  "google_client_id": "xxxxx.apps.googleusercontent.com",
+  "google_client_secret": "GOCSPX-xxxxx",
+  "anthropic_api_key": "sk-ant-api03-xxxxx",
+  "session_secret": "random-string",
+  "base_url": "http://localhost:3000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Configuration saved successfully",
+  "restart_required": false
+}
+```
+
+### POST /api/setup/test
+Test API credentials before saving.
+
+**Request:**
+```json
+{
+  "anthropic_api_key": "sk-ant-api03-xxxxx"
+}
+```
+
+**Response:**
+```json
+{
+  "anthropic": { "valid": true }
+}
+```
 
 ---
 
@@ -335,6 +396,108 @@ Send prompt to Claude for editing assistance.
 
 ---
 
+## Health Endpoints (Public)
+
+### GET /api/health
+Full health check with metrics.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-28T14:30:00Z",
+  "uptime": {
+    "ms": 3600000,
+    "formatted": "0d 1h 0m 0s"
+  },
+  "server": {
+    "nodeVersion": "v20.10.0",
+    "platform": "win32",
+    "memoryUsage": { ... },
+    "pid": 12345
+  },
+  "database": {
+    "status": "connected",
+    "path": "/path/to/users.db"
+  },
+  "metrics": {
+    "requestCount": 1234,
+    "errorCount": 2
+  }
+}
+```
+
+### GET /api/health/live
+Kubernetes liveness probe.
+
+**Response:**
+```json
+{
+  "status": "alive",
+  "timestamp": "2026-01-28T14:30:00Z"
+}
+```
+
+### GET /api/health/ready
+Kubernetes readiness probe.
+
+**Response:**
+```json
+{
+  "status": "ready",
+  "timestamp": "2026-01-28T14:30:00Z"
+}
+```
+
+---
+
+## Admin Stats Endpoint
+
+### GET /api/admin/stats
+Server statistics (admin only).
+
+**Response:**
+```json
+{
+  "users": 5,
+  "comments": 23,
+  "plans": 3,
+  "versions": 45,
+  "drafts": 7,
+  "server": {
+    "uptime": 3600000,
+    "requests": 1234,
+    "errors": 2
+  }
+}
+```
+
+---
+
+## Review Comments Endpoint
+
+### GET /api/review/comments
+Get all comments with filters (for review dashboard).
+
+**Query params:** `status=open`, `artifact_type=specifications`
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "artifact_type": "specifications",
+    "artifact_name": "framework.md",
+    "user_name": "Reviewer Name",
+    "comment_text": "...",
+    "status": "open",
+    "created_at": "2026-01-28T10:00:00Z"
+  }
+]
+```
+
+---
+
 ## Error Responses
 
 All errors return:
@@ -346,7 +509,10 @@ All errors return:
 ```
 
 HTTP Status Codes:
+- 200: Success
 - 400: Bad Request (missing/invalid params)
+- 401: Unauthorized (not logged in)
 - 403: Forbidden (insufficient permissions)
 - 404: Not Found
 - 500: Internal Server Error
+- 503: Service Unavailable (API not configured)
