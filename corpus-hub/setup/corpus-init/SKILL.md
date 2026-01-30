@@ -21,6 +21,9 @@ This skill initializes brand-new projects as corpus-enabled from scratch. It cre
 ```
 User: "Initialize corpus for my project" or "Enable CorpusHub"
 ↓
+0. DETECT corpus status (check if already corpus-enabled)
+   → If already enabled: ask if user wants to re-initialize or update
+   → If not enabled: proceed to step 1
 1. Ask if user wants to enable CorpusHub (OPT-OUT QUESTION)
    → If "No", stop here
 2. Detect project location (current directory or ask)
@@ -35,6 +38,105 @@ User: "Initialize corpus for my project" or "Enable CorpusHub"
 ```
 
 **Total time:** 2-3 minutes with user input
+
+---
+
+## Step 0: Detection (Pre-Check)
+
+**ALWAYS run detection before initializing** to avoid overwriting existing corpus infrastructure.
+
+### Detection API Call
+
+```javascript
+const projectPath = process.cwd(); // or user-specified path
+const response = await fetch(`http://localhost:3000/api/corpora/detect?path=${encodeURIComponent(projectPath)}`);
+const status = await response.json();
+```
+
+### Detection Results
+
+**Case A: Already Corpus-Enabled**
+```javascript
+if (status.isCorpusEnabled) {
+  console.log(`✅ This project is already corpus-enabled: ${status.config.name}`);
+  console.log('\nCurrent Status:');
+  console.log(`  • Config: ${status.checks.configValid ? '✓' : '✗'}`);
+  console.log(`  • Registered: ${status.checks.isRegistered ? '✓' : '✗'}`);
+  console.log(`  • Infrastructure: ${status.checks.infrastructureExists ? '✓' : '✗'}`);
+
+  // Ask user what to do
+  const choice = await askUser({
+    question: 'This project is already corpus-enabled. What would you like to do?',
+    options: [
+      { label: 'Update configuration', value: 'update' },
+      { label: 'Re-initialize (overwrites existing)', value: 'reinit' },
+      { label: 'Cancel', value: 'cancel' }
+    ]
+  });
+
+  if (choice === 'cancel') {
+    console.log('✅ Initialization cancelled. No changes made.');
+    return;
+  }
+
+  if (choice === 'update') {
+    // Open config for editing
+    console.log('Opening corpus-config.json for editing...');
+    return;
+  }
+
+  // choice === 'reinit': warn and proceed
+  console.warn('⚠️  WARNING: Re-initializing will overwrite existing corpus-config.json');
+  const confirm = await askUser({
+    question: 'Are you sure you want to continue?',
+    options: [
+      { label: 'Yes, re-initialize', value: 'yes' },
+      { label: 'No, cancel', value: 'no' }
+    ]
+  });
+
+  if (confirm === 'no') {
+    console.log('✅ Initialization cancelled. No changes made.');
+    return;
+  }
+
+  // Proceed with re-initialization
+}
+```
+
+**Case B: Partial Corpus Infrastructure**
+```javascript
+if (status.checks.configExists && !status.checks.configValid) {
+  console.log('⚠️  Found corpus-config.json but it has errors:');
+  status.issues.forEach(issue => {
+    console.log(`  [${issue.severity}] ${issue.message}`);
+  });
+
+  const choice = await askUser({
+    question: 'Would you like to fix the existing config or start fresh?',
+    options: [
+      { label: 'Fix existing config', value: 'fix' },
+      { label: 'Start fresh (overwrites)', value: 'fresh' },
+      { label: 'Cancel', value: 'cancel' }
+    ]
+  });
+
+  if (choice === 'cancel') return;
+  if (choice === 'fix') {
+    // Open config for editing with validation
+    return;
+  }
+  // choice === 'fresh': proceed with initialization
+}
+```
+
+**Case C: Not Corpus-Enabled**
+```javascript
+if (!status.checks.configExists) {
+  // Proceed with standard initialization workflow
+  console.log('✅ No existing corpus infrastructure detected. Proceeding with initialization...');
+}
+```
 
 ---
 

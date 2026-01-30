@@ -23,6 +23,10 @@ This skill converts existing projects to be corpus-enabled while preserving thei
 ```
 User: "Convert this project to use CorpusHub"
 ↓
+0. DETECT corpus status (check if already corpus-enabled)
+   → If already enabled: show status and ask if user wants to reconvert
+   → If partially enabled: identify issues and suggest fixes
+   → If not enabled: proceed with conversion
 1. Detect project location (current directory)
 2. Scan for documentation files
 3. Analyze directory structure
@@ -40,6 +44,143 @@ User: "Convert this project to use CorpusHub"
 ```
 
 **Total time:** 3-5 minutes (longer for large projects)
+
+---
+
+## Step 0: Detection (Pre-Check)
+
+**ALWAYS run detection before converting** to avoid conflicts with existing corpus infrastructure.
+
+### Detection API Call
+
+```javascript
+const projectPath = process.cwd(); // or user-specified path
+const response = await fetch(`http://localhost:3000/api/corpora/detect?path=${encodeURIComponent(projectPath)}`);
+const status = await response.json();
+```
+
+### Detection Results
+
+**Case A: Fully Corpus-Enabled**
+```javascript
+if (status.isCorpusEnabled) {
+  console.log(`⚠️  This project is already corpus-enabled: ${status.config.name}`);
+  console.log('\nCurrent Status:');
+  console.log(`  • Config: ${status.checks.configValid ? '✓ Valid' : '✗ Invalid'}`);
+  console.log(`  • Registered: ${status.checks.isRegistered ? '✓ Yes' : '✗ No'}`);
+  console.log(`  • Infrastructure: ${status.checks.infrastructureExists ? '✓ Exists' : '✗ Missing'}`);
+  console.log(`  • Database: ${status.checks.databaseExists ? '✓ Exists' : '✗ Missing'}`);
+
+  if (status.infrastructure) {
+    console.log(`\n  • Corpus has ${status.infrastructure.bitCount} bits`);
+  }
+
+  const choice = await askUser({
+    question: 'This project is already corpus-enabled. What would you like to do?',
+    options: [
+      { label: 'View status details', value: 'status' },
+      { label: 'Reconvert (regenerates corpus from source)', value: 'reconvert' },
+      { label: 'Repair issues', value: 'repair' },
+      { label: 'Cancel', value: 'cancel' }
+    ]
+  });
+
+  if (choice === 'cancel') {
+    console.log('✅ Conversion cancelled. No changes made.');
+    return;
+  }
+
+  if (choice === 'status') {
+    // Show full status report
+    console.log(JSON.stringify(status, null, 2));
+    return;
+  }
+
+  if (choice === 'repair') {
+    // Show suggested fixes
+    console.log('\nSuggested Fixes:');
+    status.suggestions.forEach((s, i) => {
+      console.log(`${i + 1}. ${s.action}: ${s.description}`);
+    });
+    return;
+  }
+
+  // choice === 'reconvert': warn and proceed
+  console.warn('\n⚠️  WARNING: Reconverting will:');
+  console.warn('  • Regenerate corpus-config.json');
+  console.warn('  • Rebuild all corpus bits');
+  console.warn('  • Preserve existing files (marked deprecated)');
+  console.warn('  • NOT delete any data');
+
+  const confirm = await askUser({
+    question: 'Are you sure you want to reconvert?',
+    options: [
+      { label: 'Yes, reconvert', value: 'yes' },
+      { label: 'No, cancel', value: 'no' }
+    ]
+  });
+
+  if (confirm === 'no') {
+    console.log('✅ Conversion cancelled. No changes made.');
+    return;
+  }
+
+  // Proceed with reconversion
+  console.log('Starting reconversion...');
+}
+```
+
+**Case B: Partially Corpus-Enabled (has issues)**
+```javascript
+if (status.checks.configExists && !status.isCorpusEnabled) {
+  console.log('⚠️  Found partial corpus infrastructure with issues:');
+
+  // Show detected issues
+  console.log('\nIssues:');
+  status.issues.forEach(issue => {
+    const icon = issue.severity === 'error' ? '✗' : '⚠️';
+    console.log(`  ${icon} [${issue.severity}] ${issue.message}`);
+    if (issue.details) {
+      console.log(`      ${issue.details}`);
+    }
+  });
+
+  // Show suggestions
+  console.log('\nSuggestions:');
+  status.suggestions.forEach((s, i) => {
+    console.log(`  ${i + 1}. ${s.description}`);
+  });
+
+  const choice = await askUser({
+    question: 'Would you like to fix issues or start fresh?',
+    options: [
+      { label: 'Fix existing infrastructure', value: 'fix' },
+      { label: 'Start fresh (regenerate)', value: 'fresh' },
+      { label: 'Cancel', value: 'cancel' }
+    ]
+  });
+
+  if (choice === 'cancel') return;
+
+  if (choice === 'fix') {
+    // Attempt automated fixes based on suggestions
+    console.log('Attempting to fix issues...');
+    // Implementation would apply suggested fixes
+    return;
+  }
+
+  // choice === 'fresh': proceed with conversion
+  console.log('Proceeding with fresh conversion...');
+}
+```
+
+**Case C: Not Corpus-Enabled (Clean Conversion)**
+```javascript
+if (!status.checks.configExists) {
+  // Proceed with standard conversion workflow
+  console.log('✅ No existing corpus infrastructure detected. Starting conversion...');
+}
+```
 
 ---
 
