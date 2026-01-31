@@ -1,0 +1,101 @@
+{
+  "name": "my-corpus",
+  "version": "1.0.0",
+  "description": "Minimal corpus configuration template",
+
+  "artifacts": {
+    "documentation": {
+      "path": "docs",
+      "sourceMode": "corpus",
+      "title": "Documentation"
+    }
+  },
+
+  "voice": {
+    "attributes": ["clear", "professional"],
+    "avoid": ["jargon", "unnecessary complexity"]
+  },
+
+  "roles": {
+    "editAccess": ["editor", "admin"],
+    "aiAccess": ["editor", "author", "admin"]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+    "convergence": {
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How it's built",
+          "audits": [
+            {
+              "id": "consistency",
+              "enabled": true
+            },
+            {
+              "id": "navigation",
+              "enabled": true
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How it's experienced",
+          "audits": [
+            {
+              "id": "content",
+              "enabled": true,
+              "config": {
+                "check_grammar": true,
+                "check_spelling": true,
+                "check_readability": true,
+                "readability_target": "grade-10"
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How it all works together",
+          "audits": []
+        }
+      ],
+      "gate": {
+        "requireCleanPasses": 3,
+        "maxIterations": 10
+      }
+    },
+    "applicable_audits": [
+      "consistency",
+      "navigation",
+      "content"
+    ]
+  },
+
+  "backup": {
+    "enabled": false,
+    "schedule": "daily",
+    "retention": {
+      "daily": 7,
+      "weekly": 4,
+      "monthly": 12
+    },
+    "strategy": "full",
+    "compress": true,
+    "location": ".corpus/backups"
+  },
+
+  "export": {
+    "formats": {
+      "pdf": {
+        "pageSize": "A4",
+        "margins": "1in",
+        "includeTOC": true
+      },
+      "html": {
+        "inlineAssets": true
+      }
+    }
+  }
+}
