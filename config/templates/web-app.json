@@ -1,0 +1,331 @@
+{
+  "corpus": {
+    "name": "Web Application Project",
+    "description": "Full-stack web application with backend API and frontend UI",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/project"
+  },
+
+  "artifacts": {
+    "source-code": {
+      "path": "src",
+      "label": "Source Code",
+      "extensions": [".js", ".ts", ".jsx", ".tsx"],
+      "sourceMode": "source"
+    },
+    "api-code": {
+      "path": "src/api",
+      "label": "API Endpoints",
+      "extensions": [".js", ".ts"],
+      "sourceMode": "source"
+    },
+    "frontend-code": {
+      "path": "src/frontend",
+      "label": "Frontend Components",
+      "extensions": [".js", ".jsx", ".tsx", ".vue"],
+      "sourceMode": "source"
+    },
+    "tests": {
+      "path": "tests",
+      "label": "Test Suite",
+      "extensions": [".test.js", ".spec.js", ".test.ts"],
+      "sourceMode": "source"
+    },
+    "requirements": {
+      "path": "docs/requirements",
+      "label": "Requirements",
+      "extensions": [".html", ".md"],
+      "sourceMode": "corpus"
+    },
+    "documentation": {
+      "path": "docs",
+      "label": "Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "api-docs": {
+      "path": "docs/api",
+      "label": "API Documentation",
+      "extensions": [".md", ".html"],
+      "sourceMode": "bidirectional"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "security-concepts",
+        "label": "Security Concepts",
+        "terms": [
+          "OAuth 2.0 with cookie separation",
+          "Parameterized queries",
+          "CSRF token validation",
+          "XSS prevention via escapeHtml",
+          "Rate limiting",
+          "First-user becomes admin"
+        ],
+        "canonicalSource": "requirements",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "architecture-patterns",
+        "label": "Architecture Patterns",
+        "terms": [
+          "MVC pattern",
+          "Repository pattern",
+          "Service layer",
+          "Dependency injection",
+          "Event-driven architecture"
+        ],
+        "canonicalSource": "requirements",
+        "matchMode": "case-insensitive"
+      },
+      {
+        "id": "api-conventions",
+        "label": "API Conventions",
+        "terms": [
+          "RESTful API",
+          "GraphQL endpoint",
+          "WebSocket connection",
+          "SSE (Server-Sent Events)"
+        ],
+        "canonicalSource": "api-docs",
+        "matchMode": "word-boundary"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "docs/system-prompt.md",
+    "attributes": [
+      "professional",
+      "technical",
+      "clear",
+      "concise"
+    ],
+    "avoid": [
+      "marketing speak",
+      "jargon without explanation",
+      "vague statements"
+    ],
+    "preferredTerms": {
+      "OAuth 2.0 with cookie separation": "OAuth",
+      "Parameterized queries": "SQL queries",
+      "Server-Sent Events": "SSE"
+    }
+  },
+
+  "roles": {
+    "available": [
+      "admin",
+      "editor",
+      "reviewer",
+      "developer",
+      "tester",
+      "viewer",
+      "pending"
+    ],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "developer"],
+    "editAccess": ["admin", "editor", "developer"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": [
+      "src/",
+      "docs/",
+      "tests/"
+    ]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "security",
+      "quality",
+      "performance",
+      "accessibility",
+      "seo",
+      "navigation",
+      "dependency",
+      "consistency"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 10,
+        "required_clean_passes": 3,
+        "approval_required": true
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2,
+        "test_scenarios": [
+          "complete-user-journey",
+          "edge-cases",
+          "error-handling",
+          "performance-under-load",
+          "accessibility-testing"
+        ]
+      },
+
+      "max_convergence_cycles": 5,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How it works - code, architecture, implementation",
+          "audits": [
+            {
+              "id": "security",
+              "config": {
+                "checks": [
+                  "xss",
+                  "csrf",
+                  "sql_injection",
+                  "oauth_configuration",
+                  "https_enforcement",
+                  "rate_limiting",
+                  "secrets_exposure"
+                ],
+                "exclude_patterns": ["test/**", "*.test.js"]
+              }
+            },
+            {
+              "id": "quality",
+              "config": {
+                "min_coverage": 80,
+                "max_complexity": 10,
+                "linting_config": ".eslintrc.json",
+                "check_dead_code": true,
+                "check_duplicates": true
+              }
+            },
+            {
+              "id": "performance",
+              "config": {
+                "max_bundle_size_kb": 500,
+                "max_load_time_ms": 3000,
+                "check_n_plus_one": true,
+                "check_unoptimized_images": true,
+                "check_caching": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How it's experienced - UX, flows, accessibility",
+          "audits": [
+            {
+              "id": "auth-flow-testing",
+              "config": {
+                "test_scenarios": [
+                  "signup",
+                  "login",
+                  "logout",
+                  "password-reset",
+                  "oauth-login",
+                  "session-timeout"
+                ]
+              }
+            },
+            {
+              "id": "ux-performance",
+              "config": {
+                "metrics": ["lcp", "fid", "cls"],
+                "thresholds": {
+                  "lcp": 2500,
+                  "fid": 100,
+                  "cls": 0.1
+                },
+                "check_responsiveness": true
+              }
+            },
+            {
+              "id": "accessibility",
+              "config": {
+                "wcag_level": "AA",
+                "tools": ["axe", "lighthouse"],
+                "check_keyboard_navigation": true,
+                "check_screen_reader": true,
+                "check_color_contrast": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How it fits together - docs, completeness, consistency",
+          "audits": [
+            {
+              "id": "documentation",
+              "config": {
+                "required": [
+                  "README.md",
+                  "docs/API.md",
+                  "docs/DEPLOYMENT.md",
+                  "docs/CONTRIBUTING.md"
+                ],
+                "check_api_coverage": true,
+                "check_examples": true
+              }
+            },
+            {
+              "id": "dependency",
+              "config": {
+                "tools": ["npm_audit", "snyk"],
+                "check_outdated": true,
+                "check_licenses": true,
+                "allowed_licenses": ["MIT", "Apache-2.0", "BSD-3-Clause"]
+              }
+            },
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": ["src/", "docs/"],
+                "severity_threshold": "warning"
+              }
+            },
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": true,
+                "check_orphaned_pages": true,
+                "entry_points": ["README.md", "docs/index.md"]
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "2-4 hours",
+        "verification": "1-2 hours",
+        "stabilization": "0.5-1 hour",
+        "total_target": "5-12 hours"
+      },
+
+      "success_criteria": {
+        "automated": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 0
+        },
+        "user_validation": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 3
+        }
+      }
+    }
+  }
+}

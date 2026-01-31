@@ -1,0 +1,167 @@
+{
+  "corpus": {
+    "name": "Content Corpus",
+    "description": "Documentation and content repository",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/corpus"
+  },
+
+  "artifacts": {
+    "documents": {
+      "path": "documents",
+      "label": "Core Documents",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "specifications": {
+      "path": "specifications",
+      "label": "Specifications",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "guides": {
+      "path": "guides",
+      "label": "User Guides",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "reference": {
+      "path": "reference",
+      "label": "Reference Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "core-concepts",
+        "label": "Core Concepts",
+        "terms": [
+          "Term 1",
+          "Term 2",
+          "Term 3"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "word-boundary"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "voice/system-prompt.md",
+    "attributes": [
+      "professional",
+      "clear",
+      "authoritative",
+      "accessible"
+    ],
+    "avoid": [
+      "jargon",
+      "ambiguity",
+      "passive voice"
+    ],
+    "preferredTerms": {}
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "reviewer", "author", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": ["documents/", "specifications/", "guides/", "reference/"]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "consistency",
+      "content",
+      "navigation"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 8,
+        "required_clean_passes": 3,
+        "approval_required": false
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 1,
+        "test_scenarios": [
+          "readability",
+          "navigation-flow",
+          "completeness"
+        ]
+      },
+
+      "max_convergence_cycles": 3,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How content is structured",
+          "audits": [
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": ["documents/", "specifications/"],
+                "severity_threshold": "warning"
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How content is experienced",
+          "audits": [
+            {
+              "id": "content",
+              "config": {
+                "check_grammar": true,
+                "check_spelling": true,
+                "check_readability": true,
+                "readability_target": "grade-10",
+                "style_guide": "voice/style-guide.md"
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How content fits together",
+          "audits": [
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": false,
+                "check_orphaned_pages": true,
+                "entry_points": ["README.md", "documents/index.md"]
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "1-2 hours",
+        "verification": "0.5-1 hour",
+        "stabilization": "0.5 hour",
+        "total_target": "3-6 hours"
+      }
+    }
+  }
+}
