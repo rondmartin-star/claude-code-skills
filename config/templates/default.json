@@ -1,0 +1,128 @@
+{
+  "corpus": {
+    "name": "Project Name",
+    "description": "Project description",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/project"
+  },
+
+  "artifacts": {
+    "documentation": {
+      "path": "docs",
+      "label": "Documentation",
+      "extensions": [".md", ".html"],
+      "sourceMode": "bidirectional"
+    },
+    "readme": {
+      "path": ".",
+      "label": "README",
+      "extensions": ["README.md"],
+      "sourceMode": "bidirectional"
+    }
+  },
+
+  "framework": {
+    "categories": []
+  },
+
+  "voice": {
+    "promptFile": "voice/system-prompt.md",
+    "attributes": [
+      "professional",
+      "clear"
+    ],
+    "avoid": [
+      "jargon",
+      "ambiguity"
+    ],
+    "preferredTerms": {}
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": ["docs/"]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "content",
+      "navigation"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 5,
+        "required_clean_passes": 3,
+        "approval_required": false
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 1,
+        "test_scenarios": [
+          "readability",
+          "navigation-flow"
+        ]
+      },
+
+      "max_convergence_cycles": 3,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How content is structured",
+          "audits": []
+        },
+        {
+          "name": "user",
+          "description": "How content is experienced",
+          "audits": [
+            {
+              "id": "content",
+              "config": {
+                "check_grammar": true,
+                "check_spelling": true,
+                "check_readability": true,
+                "readability_target": "grade-10"
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How content fits together",
+          "audits": [
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": false,
+                "check_orphaned_pages": true,
+                "entry_points": ["README.md"]
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "1-2 hours",
+        "verification": "0.5-1 hour",
+        "stabilization": "0.5 hour",
+        "total_target": "2-4 hours"
+      }
+    }
+  }
+}

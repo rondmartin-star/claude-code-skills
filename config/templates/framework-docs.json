@@ -1,0 +1,239 @@
+{
+  "corpus": {
+    "name": "Framework Documentation",
+    "description": "Comprehensive framework documentation and specifications",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/framework"
+  },
+
+  "artifacts": {
+    "specifications": {
+      "path": "specifications",
+      "label": "Core Specifications",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "principles": {
+      "path": "principles",
+      "label": "Framework Principles",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "roles": {
+      "path": "roles",
+      "label": "Stakeholder Roles",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "reference": {
+      "path": "reference",
+      "label": "Reference Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "guides": {
+      "path": "guides",
+      "label": "Implementation Guides",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "examples": {
+      "path": "examples",
+      "label": "Code Examples",
+      "extensions": [".md", ".js", ".ts"],
+      "sourceMode": "bidirectional"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "core-principles",
+        "label": "Core Principles",
+        "terms": [
+          "Principle 1",
+          "Principle 2",
+          "Principle 3"
+        ],
+        "canonicalSource": "principles",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "stakeholder-roles",
+        "label": "Stakeholder Roles",
+        "terms": [
+          "Role 1",
+          "Role 2",
+          "Role 3"
+        ],
+        "canonicalSource": "roles",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "framework-concepts",
+        "label": "Framework Concepts",
+        "terms": [
+          "Concept 1",
+          "Concept 2",
+          "Concept 3"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "case-insensitive"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "voice/system-prompt.md",
+    "attributes": [
+      "authoritative",
+      "clear",
+      "comprehensive",
+      "formal",
+      "structured"
+    ],
+    "avoid": [
+      "colloquialisms",
+      "ambiguity",
+      "inconsistent terminology",
+      "oversimplification"
+    ],
+    "preferredTerms": {
+      "Principle 1": "P1",
+      "Stakeholder": "Role"
+    }
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": [
+      "specifications/",
+      "principles/",
+      "roles/",
+      "reference/",
+      "guides/"
+    ]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "consistency",
+      "content",
+      "navigation"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 8,
+        "required_clean_passes": 3,
+        "approval_required": false
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2,
+        "test_scenarios": [
+          "framework-completeness",
+          "principle-alignment",
+          "role-clarity",
+          "navigation-flow",
+          "terminology-consistency"
+        ]
+      },
+
+      "max_convergence_cycles": 3,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How framework is structured",
+          "audits": [
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": [
+                  "specifications/",
+                  "principles/",
+                  "roles/"
+                ],
+                "severity_threshold": "warning",
+                "check_framework_terms": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How framework is understood",
+          "audits": [
+            {
+              "id": "content",
+              "config": {
+                "check_grammar": true,
+                "check_spelling": true,
+                "check_readability": true,
+                "readability_target": "college",
+                "style_guide": "voice/style-guide.md",
+                "check_terminology": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How framework fits together",
+          "audits": [
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": false,
+                "check_orphaned_pages": true,
+                "entry_points": [
+                  "README.md",
+                  "specifications/index.md"
+                ],
+                "check_cross_references": true
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "2-3 hours",
+        "verification": "1-2 hours",
+        "stabilization": "0.5-1 hour",
+        "total_target": "4-8 hours"
+      },
+
+      "success_criteria": {
+        "automated": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 0
+        },
+        "user_validation": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 5,
+          "terminology_matches": "100%",
+          "navigation_completeness": "100%"
+        }
+      }
+    }
+  }
+}

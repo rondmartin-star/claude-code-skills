@@ -1,0 +1,318 @@
+{
+  "corpus": {
+    "name": "Windows Desktop Application",
+    "description": "Windows desktop application with NSSM service and MSI packaging",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/windows-app"
+  },
+
+  "artifacts": {
+    "source-code": {
+      "path": "src",
+      "label": "Application Code",
+      "extensions": [".js", ".ts"],
+      "sourceMode": "source"
+    },
+    "ui-components": {
+      "path": "src/ui",
+      "label": "UI Components",
+      "extensions": [".js", ".jsx", ".html", ".css"],
+      "sourceMode": "source"
+    },
+    "service-config": {
+      "path": "config",
+      "label": "Service Configuration",
+      "extensions": [".json", ".xml"],
+      "sourceMode": "source"
+    },
+    "tests": {
+      "path": "tests",
+      "label": "Test Suite",
+      "extensions": [".test.js", ".spec.js"],
+      "sourceMode": "source"
+    },
+    "requirements": {
+      "path": "docs/requirements",
+      "label": "Requirements",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "documentation": {
+      "path": "docs",
+      "label": "Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "deployment": {
+      "path": "deployment",
+      "label": "Deployment Scripts",
+      "extensions": [".ps1", ".bat", ".wxs"],
+      "sourceMode": "source"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "security-patterns",
+        "label": "Security Patterns",
+        "terms": [
+          "OAuth 2.0 with cookie separation",
+          "Parameterized queries",
+          "CSRF token validation",
+          "XSS prevention via escapeHtml",
+          "Rate limiting",
+          "First-user becomes admin"
+        ],
+        "canonicalSource": "requirements",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "service-patterns",
+        "label": "Windows Service Patterns",
+        "terms": [
+          "NSSM service management",
+          "Auto-restart on failure",
+          "Graceful shutdown",
+          "Service health checks",
+          "Event log integration"
+        ],
+        "canonicalSource": "requirements",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "deployment-patterns",
+        "label": "Deployment Patterns",
+        "terms": [
+          "MSI installer",
+          "WiX Toolset",
+          "Silent installation",
+          "Upgrade detection",
+          "Rollback support"
+        ],
+        "canonicalSource": "deployment",
+        "matchMode": "word-boundary"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "docs/system-prompt.md",
+    "attributes": [
+      "technical",
+      "precise",
+      "professional",
+      "Windows-focused"
+    ],
+    "avoid": [
+      "Linux-specific patterns",
+      "cross-platform assumptions",
+      "vague deployment instructions"
+    ],
+    "preferredTerms": {
+      "OAuth 2.0 with cookie separation": "OAuth",
+      "NSSM service": "Windows service",
+      "MSI installer": "installer"
+    }
+  },
+
+  "roles": {
+    "available": [
+      "admin",
+      "editor",
+      "developer",
+      "tester",
+      "reviewer",
+      "viewer",
+      "pending"
+    ],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "developer"],
+    "editAccess": ["admin", "editor", "developer"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": [
+      "src/",
+      "docs/",
+      "deployment/",
+      "tests/"
+    ]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "security",
+      "quality",
+      "navigation",
+      "dependency",
+      "consistency"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 10,
+        "required_clean_passes": 3,
+        "approval_required": true
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2,
+        "test_scenarios": [
+          "installation-on-fresh-windows",
+          "service-startup-shutdown",
+          "upgrade-from-previous-version",
+          "uninstallation",
+          "error-handling"
+        ]
+      },
+
+      "max_convergence_cycles": 5,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How application works",
+          "audits": [
+            {
+              "id": "security",
+              "config": {
+                "checks": [
+                  "xss",
+                  "csrf",
+                  "sql_injection",
+                  "oauth_configuration",
+                  "https_enforcement",
+                  "rate_limiting",
+                  "secrets_exposure",
+                  "windows_permissions"
+                ],
+                "exclude_patterns": ["test/**", "*.test.js"],
+                "windows_specific": true
+              }
+            },
+            {
+              "id": "quality",
+              "config": {
+                "min_coverage": 75,
+                "max_complexity": 10,
+                "linting_config": ".eslintrc.json",
+                "check_dead_code": true,
+                "check_duplicates": true,
+                "windows_compatibility": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How application is experienced",
+          "audits": [
+            {
+              "id": "installation-testing",
+              "config": {
+                "test_scenarios": [
+                  "fresh-install",
+                  "upgrade-install",
+                  "silent-install",
+                  "uninstall",
+                  "repair"
+                ],
+                "windows_versions": ["Windows 10", "Windows 11", "Windows Server 2019"]
+              }
+            },
+            {
+              "id": "service-testing",
+              "config": {
+                "test_scenarios": [
+                  "service-start",
+                  "service-stop",
+                  "service-restart",
+                  "auto-restart-on-crash",
+                  "graceful-shutdown"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How application fits together",
+          "audits": [
+            {
+              "id": "documentation",
+              "config": {
+                "required": [
+                  "README.md",
+                  "docs/INSTALLATION.md",
+                  "docs/SERVICE-MANAGEMENT.md",
+                  "docs/DEPLOYMENT.md",
+                  "docs/TROUBLESHOOTING.md"
+                ],
+                "check_deployment_coverage": true,
+                "check_windows_specific_docs": true
+              }
+            },
+            {
+              "id": "dependency",
+              "config": {
+                "tools": ["npm_audit"],
+                "check_outdated": true,
+                "check_licenses": true,
+                "allowed_licenses": ["MIT", "Apache-2.0", "BSD-3-Clause"],
+                "windows_compatibility_check": true
+              }
+            },
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": ["src/", "docs/", "deployment/"],
+                "severity_threshold": "warning",
+                "check_windows_patterns": true
+              }
+            },
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": true,
+                "check_orphaned_pages": true,
+                "entry_points": ["README.md", "docs/index.md"]
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "3-5 hours",
+        "verification": "2-3 hours",
+        "stabilization": "1-2 hours",
+        "total_target": "8-15 hours"
+      },
+
+      "success_criteria": {
+        "automated": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 0
+        },
+        "user_validation": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 3,
+          "installation_success_rate": "100%",
+          "service_reliability": "99.9%"
+        }
+      }
+    }
+  }
+}
