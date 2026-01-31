@@ -1,0 +1,306 @@
+{
+  "_comment": "Real America 4.0 framework documentation configuration example",
+
+  "corpus": {
+    "name": "America 4.0 Framework",
+    "description": "Comprehensive framework for reimagining American democracy with 7 principles and 14 stakeholder roles",
+    "version": "1.0.0",
+    "baseDir": "/path/to/america40-framework"
+  },
+
+  "artifacts": {
+    "specifications": {
+      "path": "03-specifications/v1.0",
+      "label": "Core Specifications",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "principles": {
+      "path": "03-specifications/v1.0",
+      "label": "Seven Principles",
+      "extensions": [".md"],
+      "sourceMode": "corpus"
+    },
+    "roles": {
+      "path": "03-specifications/v1.0",
+      "label": "Stakeholder Roles",
+      "extensions": [".md"],
+      "sourceMode": "corpus"
+    },
+    "marketing": {
+      "path": "04-marketing",
+      "label": "Marketing & Messaging",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "style-guide": {
+      "path": "04-marketing/messaging",
+      "label": "Style Guide",
+      "extensions": [".md"],
+      "sourceMode": "corpus"
+    },
+    "reference": {
+      "path": "05-reference",
+      "label": "Reference Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "webapp": {
+      "path": "07-webapp",
+      "label": "Reference Hub Web App",
+      "extensions": [".js", ".html", ".css"],
+      "sourceMode": "source"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "seven-principles",
+        "label": "Seven Principles",
+        "terms": [
+          "Human Dignity and Inclusion",
+          "Social and Ecological Interconnection",
+          "Economic Justice and Opportunity",
+          "Democratic Governance and Rule of Law",
+          "Global Citizenship and Leadership",
+          "Creative and Cultural Flourishing",
+          "Evidence-Based Decision Making"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "exact"
+      },
+      {
+        "id": "stakeholder-roles",
+        "label": "Fourteen Stakeholder Roles",
+        "terms": [
+          "Facilitator",
+          "Connector",
+          "Strategist",
+          "Innovator",
+          "Communicator",
+          "Mobilizer",
+          "Builder",
+          "Steward",
+          "Analyst",
+          "Advocate",
+          "Educator",
+          "Researcher",
+          "Auditor",
+          "Synthesizer"
+        ],
+        "canonicalSource": "roles",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "key-concepts",
+        "label": "Key Concepts",
+        "terms": [
+          "Variable Geometry",
+          "Curated Failure",
+          "Attractor Theory",
+          "Democracy Auditor",
+          "America 1.0",
+          "America 2.0",
+          "America 3.0",
+          "America 4.0",
+          "Stakeholder Network",
+          "Framework Evolution"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "historical-context",
+        "label": "Historical Context",
+        "terms": [
+          "1776 founding",
+          "Progressive Era reforms",
+          "Civil Rights Movement",
+          "21st century challenges",
+          "Digital transformation",
+          "Climate crisis response"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "case-insensitive"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "04-marketing/messaging/america40-style-guide.md",
+    "attributes": [
+      "authoritative",
+      "visionary",
+      "inclusive",
+      "hopeful",
+      "rigorous",
+      "accessible"
+    ],
+    "avoid": [
+      "partisan language",
+      "divisive rhetoric",
+      "jargon without explanation",
+      "cynicism",
+      "oversimplification",
+      "technocratic detachment"
+    ],
+    "preferredTerms": {
+      "America 4.0": "the framework",
+      "Stakeholder": "participant",
+      "Variable Geometry": "flexible collaboration"
+    }
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": [
+      "03-specifications/",
+      "04-marketing/",
+      "05-reference/",
+      "07-webapp/"
+    ]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "consistency",
+      "content",
+      "navigation"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 8,
+        "required_clean_passes": 3,
+        "approval_required": false
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 3,
+        "test_scenarios": [
+          "principle-alignment",
+          "role-clarity",
+          "terminology-consistency",
+          "cross-reference-integrity",
+          "framework-completeness"
+        ]
+      },
+
+      "max_convergence_cycles": 3,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How the framework is structured",
+          "audits": [
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": [
+                  "03-specifications/",
+                  "04-marketing/",
+                  "05-reference/"
+                ],
+                "severity_threshold": "warning",
+                "check_framework_terms": true,
+                "check_principle_usage": true,
+                "check_role_references": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How the framework is understood",
+          "audits": [
+            {
+              "id": "content",
+              "config": {
+                "check_grammar": true,
+                "check_spelling": true,
+                "check_readability": true,
+                "readability_target": "college",
+                "style_guide": "04-marketing/messaging/america40-style-guide.md",
+                "check_terminology": true,
+                "check_voice_alignment": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How the framework fits together",
+          "audits": [
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": false,
+                "check_orphaned_pages": true,
+                "entry_points": [
+                  "README.md",
+                  "03-specifications/v1.0/index.md"
+                ],
+                "check_cross_references": true,
+                "check_principle_coverage": true,
+                "check_role_coverage": true
+              }
+            },
+            {
+              "id": "framework-completeness",
+              "config": {
+                "required_principles": 7,
+                "required_roles": 14,
+                "check_principle_definitions": true,
+                "check_role_definitions": true,
+                "check_historical_context": true,
+                "check_implementation_guidance": true
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "2-3 hours",
+        "verification": "1-2 hours",
+        "stabilization": "0.5-1 hour",
+        "total_target": "4-8 hours"
+      },
+
+      "success_criteria": {
+        "automated": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 0,
+          "terminology_consistency": "100%",
+          "principle_coverage": "100%",
+          "role_coverage": "100%"
+        },
+        "user_validation": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 5,
+          "framework_alignment": "95%",
+          "voice_consistency": "90%",
+          "cross_reference_accuracy": "100%"
+        }
+      }
+    }
+  }
+}

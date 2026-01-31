@@ -6,594 +6,462 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Project:** Claude Code Skills Library
 **Type:** Meta-Project (Skill Management System)
-**Version:** 3.0.0
+**Version:** 4.0.0
 **Owner:** Pterodactyl Holdings, LLC
-**Status:** Production
+**Status:** Production (v4.0 Reorganization In Progress)
 
 ---
 
-## Repository Overview
+## v4.0 Universal Architecture
 
-This repository contains a comprehensive ecosystem of Claude Code skills organized into five major categories:
+**Major Change:** Migrated from project-specific skills to **universal, configuration-driven patterns**.
 
-1. **meta/** - Ecosystem management and skill development tools
-2. **windows-app/** - Full Windows application development lifecycle
-3. **publishing/** - Multi-platform content creation
-4. **america40/** - America 4.0 framework review and update system
-5. **corpus-hub/** - Corpus management platform with plugin architecture
+### Two-Tier Structure
 
-Each category contains orchestrator skills that route to specialized sub-skills based on context.
+**Tier 1: Core Patterns (Universal)**
+- All skills available to all projects
+- Configuration-driven behavior via `corpus-config.json`
+- No project-specific code
+- Located in `core/` directory
 
----
+**Tier 2: Configuration Templates**
+- Lightweight JSON templates
+- Define project-specific behavior
+- Located in `config/templates/` and `config/examples/`
+- Applied to universal skills
 
-## Architecture
-
-### Core Patterns
-
-**Hierarchical Orchestrators**: Top-level orchestrators analyze intent and route to specialized skills
-- Orchestrators are lightweight (<10KB) and focus on routing logic
-- Specialized skills contain domain expertise and detailed guidance
-- Skills load reference files on-demand to stay under size limits
-
-**Size Optimization**:
-- SKILL.md target: <15KB (essential guidance only)
-- Detailed examples and templates in `references/` subdirectories
-- Load reference files only when needed for specific tasks
-
-**Fool-Proof Design**:
-- Sensible defaults that work out-of-the-box
-- Auto-detect and auto-configure where possible
-- Clear error messages with actionable guidance
-- Designed for users with varying technical backgrounds
-
-**Golden Rule - Never Rebuild**:
-- Always iterate on existing baselines
-- Preserve working state
-- Track changes in CHANGELOG.md files
-- Make minimal, targeted changes only
-
-**Error-Driven Improvement**:
-- Log errors in ERROR-AND-FIXES-LOG.md
-- Create regression tests for fixed issues
-- Update skills based on real-world problems
-- Continuous refinement based on actual usage
+**No Tier 3**: Eliminated project-specific extensions (v3.0's america40/, corpus-hub/, etc.)
 
 ---
 
-## Directory Structure
+## Repository Structure (v4.0)
 
 ```
 skills/
-├── CLAUDE.md                       # This file
-├── README.md                       # Ecosystem overview
-├── tools/                          # Validation and packaging utilities
-│   ├── quick_validate.py           # SKILL.md frontmatter validation
-│   └── package_skill.py            # Package skills for distribution
+├── CLAUDE.md                        # This file (v4.0.0)
+├── README.md                        # Ecosystem overview
+├── IMPLEMENTATION-STATUS.md         # v4.0 migration progress
+├── tools/                           # Validation utilities
+│   ├── quick_validate.py            # Validate SKILL.md
+│   └── package_skill.py             # Package for distribution
 │
-├── meta/                           # Ecosystem management (4 skills)
-│   ├── skill-ecosystem-manager/    # Create and maintain skills
-│   ├── conversation-snapshot/      # Portable context preservation
-│   ├── navigation-auditor/         # Verify navigation paths
-│   └── plugin-ecosystem/           # External plugin integrations
+├── core/                            # TIER 1: Universal Skills
+│   ├── corpus/                      # Corpus Management (6 skills)
+│   │   ├── corpus-detect/           # Status detection via API
+│   │   ├── corpus-init/             # Initialize new corpus
+│   │   ├── corpus-convert/          # Convert existing projects
+│   │   ├── corpus-config/           # Configuration management
+│   │   ├── source-mode-manager/     # 3 source modes (corpus/source/bidirectional)
+│   │   └── corpus-orchestrator/     # Route corpus operations
+│   │
+│   ├── audit/                       # Audit System (12 skills)
+│   │   ├── audit-orchestrator/      # Route to applicable audits
+│   │   ├── convergence-engine/      # Multi-methodology 3-3-1
+│   │   ├── fix-planner/             # Generate & execute fix plans
+│   │   └── audits/                  # Audit Types
+│   │       ├── consistency/         # Framework term validation
+│   │       ├── navigation/          # Link & structure validation
+│   │       ├── security/            # Vulnerability scanning
+│   │       ├── content/             # Grammar, readability, voice
+│   │       ├── quality/             # Code quality, coverage (WIP)
+│   │       ├── performance/         # Load time, bundle size (WIP)
+│   │       ├── accessibility/       # WCAG compliance (WIP)
+│   │       ├── seo/                 # Meta tags, sitemap (WIP)
+│   │       └── dependency/          # Vulnerabilities, licenses (WIP)
+│   │
+│   ├── content/                     # Content Management (4 skills)
+│   │   ├── review-edit-author/      # Universal role-based content ops
+│   │   ├── document-management/     # CRUD operations (WIP)
+│   │   ├── version-control/         # Track changes, rollback (WIP)
+│   │   └── collaboration/           # Comments, plans, approvals (WIP)
+│   │
+│   ├── development/                 # Development Tools (2 skills)
+│   │   ├── windows-app/             # Windows app lifecycle (WIP)
+│   │   └── security/                # Security patterns (WIP)
+│   │
+│   ├── publishing/                  # Publishing (2 skills)
+│   │   ├── publishing-orchestrator/ # Content creation routing (WIP)
+│   │   └── content-creation/        # Multi-platform publishing (WIP)
+│   │
+│   └── utilities/                   # Utilities (4 skills)
+│       ├── backup-restore/          # Backup & archive (WIP)
+│       ├── validation/              # Input & schema validation (WIP)
+│       ├── formatting/              # Format conversion (WIP)
+│       └── orchestration/           # Generic routing (WIP)
 │
-├── windows-app/                    # Windows development (8 skills)
-│   ├── windows-app-orchestrator/   # Phase coordinator
-│   ├── windows-app-requirements/   # User stories & acceptance criteria
-│   ├── windows-app-system-design/  # Data models & API design
-│   ├── windows-app-ui-design/      # Page inventory & navigation
-│   ├── windows-app-build/          # Implementation & testing
-│   ├── windows-app-supervision/    # NSSM service & MSI packaging
-│   └── security/                   # Security sub-category (3 skills)
-│       ├── security-patterns-orchestrator/
-│       ├── authentication-patterns/  # OAuth-first authentication
-│       └── secure-coding-patterns/   # XSS, CSRF, SQL injection prevention
+├── config/                          # TIER 2: Configuration
+│   ├── templates/                   # Pre-built templates
+│   │   ├── web-app.json             # Full-stack web applications
+│   │   ├── content-corpus.json      # Documentation repositories
+│   │   ├── framework-docs.json      # Framework documentation
+│   │   ├── windows-app.json         # Windows desktop apps
+│   │   └── default.json             # Minimal generic template
+│   │
+│   └── examples/                    # Real project examples
+│       ├── corpushub-config.json    # CorpusHub platform config
+│       └── america40-config.json    # America 4.0 framework config
 │
-├── publishing/                     # Content creation (2 skills)
-│   ├── publishing-orchestrator/
-│   └── content-creation-ecosystem/ # HTML-first with DOCX/PDF export
-│
-├── america40/                      # America 4.0 framework (7+ skills)
-│   ├── america40-orchestrator/     # Role-based routing
-│   ├── review/                     # Reviewer role
-│   ├── edit/                       # Editor role
-│   ├── author/                     # Author role
-│   ├── shared/                     # Shared utilities
-│   │   ├── backup-archive/
-│   │   ├── consistency-engine/
-│   │   ├── framework-context/
-│   │   └── implementation-executor/
-│   └── webapp-extensions/          # Reference Hub webapp specs
-│
-└── corpus-hub/                     # Corpus management (10+ skills)
-    ├── corpus-hub-orchestrator/    # Intent detection & routing
-    ├── setup/                      # Initialization & conversion
-    │   ├── corpus-init/            # New project setup
-    │   └── corpus-convert/         # Convert existing projects
-    ├── reviewer/                   # Browse, comment, plan changes
-    ├── editor/                     # Modify artifacts with AI
-    ├── author/                     # Create new drafts
-    ├── admin/                      # User mgmt, backups, health
-    ├── management/
-    │   └── corpus-status/          # Status tracking
-    └── shared/                     # Shared utilities
-        ├── consistency-engine/
-        ├── corpus-config/
-        ├── project-templates/
-        └── backup-archive/
+└── [legacy]/                        # v3.0 project-specific (being migrated)
+    ├── meta/
+    ├── windows-app/
+    ├── publishing/
+    ├── america40/
+    └── corpus-hub/
 ```
+
+---
+
+## Core Concepts (v4.0)
+
+### Corpus-First Approach
+
+**Every project is corpus-enabled by default.**
+
+A corpus is a project with:
+- `corpus-config.json` at root
+- Structured artifacts (code, docs, specs, etc.)
+- Framework terms for consistency
+- Voice attributes for AI guidance
+- Role-based permissions
+- Audit configuration
+
+**Initialization:**
+```bash
+# New project
+"Initialize this as a corpus"  → loads corpus-init
+
+# Existing project
+"Convert this to corpus"  → loads corpus-convert
+```
+
+### Source Modes
+
+Every artifact has a **source mode** defining editing workflow:
+
+| Mode | Edited In | Source of Truth | Use For |
+|------|-----------|-----------------|---------|
+| **corpus** | CorpusHub only | CorpusHub HTML | Requirements, design docs, ADRs |
+| **source** | IDE (VS Code) | Files in repo | Code, config files, tests |
+| **bidirectional** | Either location | Synced both ways | Documentation, guides, API docs |
+
+**Configuration:**
+```json
+{
+  "artifacts": {
+    "source-code": {
+      "path": "src",
+      "sourceMode": "source"
+    },
+    "requirements": {
+      "path": "docs/requirements",
+      "sourceMode": "corpus"
+    },
+    "documentation": {
+      "path": "docs",
+      "sourceMode": "bidirectional"
+    }
+  }
+}
+```
+
+### Multi-Methodology 3-3-1 Convergence
+
+**Three Methodologies:**
+1. **Technical** - How it works (code, architecture)
+2. **User** - How it's experienced (UX, flows, accessibility)
+3. **Holistic** - How it fits together (docs, consistency, completeness)
+
+**Three Iterations:**
+1. Discovery (find issues)
+2. Verification (confirm fixes)
+3. Stabilization (ensure stability)
+
+**One User Validation:**
+- Real users test the system
+- In production environment
+- With actual data
+
+**Two-Phase Workflow:**
+1. **Automated Convergence** (GATE) - Must pass 3 consecutive clean automated passes
+2. **User Validation** (Clean System) - Users test only after automation succeeds
+
+**Proven Results:** CorpusHub went from F→A grade in 5 hours, $27k+ value delivered
+
+---
+
+## Configuration Schema (corpus-config.json)
+
+### Complete Structure
+
+```json
+{
+  "corpus": {
+    "name": "Project Name",
+    "description": "Project description",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path"
+  },
+
+  "artifacts": {
+    "artifact-slug": {
+      "path": "relative/path",
+      "label": "Display Label",
+      "extensions": [".ext"],
+      "sourceMode": "corpus|source|bidirectional"
+    }
+  },
+
+  "framework": {
+    "categories": [{
+      "id": "category-id",
+      "label": "Category Label",
+      "terms": ["Term 1", "Term 2"],
+      "canonicalSource": "artifact-slug",
+      "matchMode": "word-boundary|case-insensitive|exact"
+    }]
+  },
+
+  "voice": {
+    "promptFile": "path/to/prompt.md",
+    "attributes": ["professional", "clear"],
+    "avoid": ["jargon", "ambiguity"],
+    "preferredTerms": {}
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+    "applicable_audits": ["security", "quality", "content"],
+    "convergence": {
+      "enabled": true,
+      "automated": {
+        "max_iterations": 10,
+        "required_clean_passes": 3
+      },
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2
+      },
+      "methodologies": [
+        {
+          "name": "technical",
+          "audits": [{"id": "security"}, {"id": "quality"}]
+        },
+        {
+          "name": "user",
+          "audits": [{"id": "content"}, {"id": "accessibility"}]
+        },
+        {
+          "name": "holistic",
+          "audits": [{"id": "consistency"}, {"id": "navigation"}]
+        }
+      ]
+    }
+  }
+}
+```
+
+See `config/templates/` for complete working examples.
 
 ---
 
 ## Common Development Tasks
 
-### Validating Skills
-
-Validate SKILL.md frontmatter and structure:
+### Validate Skills
 
 ```bash
-# Validate a single skill
-python tools/quick_validate.py path/to/skill-directory
+# Check SKILL.md frontmatter
+python tools/quick_validate.py core/corpus/corpus-init
 
-# Example
-python tools/quick_validate.py meta/skill-ecosystem-manager
+# Verify all skills under 15KB
+find core/ -name "SKILL.md" -exec wc -c {} \; | awk '$1 > 15360'
 ```
 
-**Validation checks**:
-- YAML frontmatter exists and is valid
-- Required fields: `name`, `description`
-- Name follows kebab-case convention
-- Description doesn't contain angle brackets
-- No unexpected frontmatter properties
-
-### Packaging Skills
-
-Package a skill for distribution:
+### Work with Corpus
 
 ```bash
-# Package to current directory
-python tools/package_skill.py path/to/skill-directory
+# Initialize new project
+"Initialize this as a corpus"
 
-# Package to specific output directory
-python tools/package_skill.py path/to/skill-directory ./dist
+# Convert existing project
+"Convert this to corpus"
 
-# Example
-python tools/package_skill.py meta/conversation-snapshot ./dist
+# Check status
+"Check corpus status"
+
+# Update config
+"Update corpus configuration"
 ```
 
-Creates a `.skill` file (zip format) containing the entire skill directory.
-
-### Checking Skill Sizes
-
-Monitor SKILL.md file sizes to ensure compliance with <15KB target:
+### Run Audits
 
 ```bash
-# Check size of a specific SKILL.md
-wc -c windows-app/windows-app-build/SKILL.md
+# Run all applicable audits
+"Run convergence audit"
 
-# Find all SKILL.md files over 15KB
-find . -name "SKILL.md" -exec wc -c {} \; | awk '$1 > 15360 {print}'
+# Specific audit
+"Run security audit"
+"Check content quality"
+"Validate consistency"
 ```
 
-### Finding Skills
-
-Locate all SKILL.md files:
+### Content Management
 
 ```bash
-find . -name "SKILL.md"
-```
+# Review mode (read-only + comments)
+"Review this document"
+"Add comment to section"
 
-Find skills by pattern:
+# Editor mode (modify + AI)
+"Edit this artifact"
+"Improve clarity with AI"
 
-```bash
-# Find all orchestrators
-find . -name "*orchestrator*" -type d
-
-# Find all shared utilities
-find . -path "*/shared/*" -name "SKILL.md"
-```
-
----
-
-## Skill Loading and Navigation
-
-### Entry Points by Category
-
-**Meta Skills** (Ecosystem Management):
-- "Create a new skill" → skill-ecosystem-manager
-- "Save this conversation" → conversation-snapshot
-- "Audit navigation" → navigation-auditor
-- "Manage plugins" → plugin-ecosystem
-
-**Windows Development**:
-- "Build a Windows app" → windows-app-orchestrator
-- "Start coding" → windows-app-build
-- "Add OAuth login" → security-patterns-orchestrator → authentication-patterns
-- "Security audit" → security-patterns-orchestrator → secure-coding-patterns
-- "Deploy to production" → windows-app-supervision
-
-**Content Creation**:
-- "Write a blog post" → publishing-orchestrator → content-creation-ecosystem
-- "Create newsletter" → publishing-orchestrator → content-creation-ecosystem
-
-**America 4.0 Framework**:
-- "Review framework docs" → america40-orchestrator → review-orchestrator
-- "Edit specifications" → america40-orchestrator → edit-orchestrator
-- "Draft new content" → america40-orchestrator → author-orchestrator
-
-**CorpusHub Platform**:
-- "Initialize corpus" → corpus-hub-orchestrator → corpus-init
-- "Convert project to corpus" → corpus-hub-orchestrator → corpus-convert
-- "Review artifacts" → corpus-hub-orchestrator → reviewer
-- "Edit documents" → corpus-hub-orchestrator → editor
-- "Create new content" → corpus-hub-orchestrator → author
-- "Manage corpus" → corpus-hub-orchestrator → admin
-
-### Orchestrator Routing Logic
-
-**windows-app-orchestrator**: Routes by development phase
-```
-Requirements → windows-app-requirements
-Design (data) → windows-app-system-design
-Design (UI) → windows-app-ui-design
-Implementation → windows-app-build
-  ├─ Auth/Security → security-patterns-orchestrator
-  │   ├─ OAuth/Sessions → authentication-patterns
-  │   └─ Input Validation → secure-coding-patterns
-Deployment → windows-app-supervision
-```
-
-**security-patterns-orchestrator**: Routes by security context
-```
-Authentication → authentication-patterns
-Secure Coding → secure-coding-patterns
-```
-
-**publishing-orchestrator**: Routes by content type
-```
-Social Media → content-creation-ecosystem (social-media.md)
-Newsletter → content-creation-ecosystem (newsletter.md)
-Blog/Website → content-creation-ecosystem (website.md)
-Journal → content-creation-ecosystem (journal.md)
-```
-
-**america40-orchestrator**: Routes by user role
-```
-Reviewer → review-orchestrator
-Editor → edit-orchestrator
-Author → author-orchestrator
-Consistency → shared/consistency-engine
-```
-
-**corpus-hub-orchestrator**: Routes by intent and role
-```
-Setup (new) → setup/corpus-init
-Setup (existing) → setup/corpus-convert
-Review → reviewer
-Edit → editor
-Create → author
-Admin → admin
-Status → management/corpus-status
+# Author mode (create new)
+"Create new draft"
+"Generate content with AI"
 ```
 
 ---
 
-## Key Architectural Concepts
+## Skill Loading Patterns
 
-### SKILL.md Structure
+### Entry Points
 
-Every skill follows this pattern:
+**Corpus Operations:**
+- "Initialize corpus" → `corpus-init`
+- "Convert to corpus" → `corpus-convert`
+- "Check status" → `corpus-detect`
+- "Update config" → `corpus-config`
+- Ambiguous → `corpus-orchestrator` routes
 
-```yaml
----
-name: skill-name-in-kebab-case
-description: >
-  Brief description of what this skill does.
-  Use when: [specific trigger conditions]
----
+**Audit Operations:**
+- "Run audit" → `audit-orchestrator` routes
+- "Start convergence" → `convergence-engine`
+- Specific audit → Direct load (e.g., `security`, `content`)
 
-# Skill Name
+**Content Operations:**
+- "Review content" → `review-edit-author` (reviewer mode)
+- "Edit content" → `review-edit-author` (editor mode)
+- "Create content" → `review-edit-author` (author mode)
 
-[Essential guidance and instructions]
+### Orchestrator Routing
 
-## When to Load This Skill
-
-[Clear trigger phrases and context indicators]
-
-## Core Guidance
-
-[Key patterns, checklists, decision trees]
-
-## Reference Files
-
-[Links to detailed examples in references/ subdirectory]
+**corpus-orchestrator:**
+```
+├─ Not enabled → Setup
+│  ├─ New project → corpus-init
+│  └─ Existing → corpus-convert
+└─ Enabled → Manage
+   ├─ Status → corpus-detect
+   ├─ Config → corpus-config
+   └─ Sync → source-mode-manager
 ```
 
-### Reference Files
-
-To keep SKILL.md files small, detailed content lives in `references/`:
-
+**audit-orchestrator:**
 ```
-skill-name/
-├── SKILL.md                    # Core guidance (<15KB)
-├── README.md                   # Quick reference
-├── references/                 # Detailed documentation
-│   ├── examples.md             # Code examples
-│   ├── patterns.md             # Implementation patterns
-│   ├── templates.md            # Boilerplate code
-│   └── checklists.md           # Validation procedures
-├── CHANGELOG.md                # Version history
-└── ERROR-AND-FIXES-LOG.md      # Known issues and fixes
+├─ Convergence mode → convergence-engine
+└─ Single audit → Route by project type
+   ├─ web-app → [security, quality, performance, ...]
+   ├─ content-corpus → [consistency, content, navigation]
+   └─ framework-docs → [consistency, content, navigation]
 ```
-
-### Shared Utilities Pattern
-
-Multiple ecosystems include `shared/` directories with common utilities:
-
-**consistency-engine**: Cross-artifact consistency scanning
-- Used by: america40, corpus-hub
-- Scans for term mismatches, broken references, style violations
-
-**backup-archive**: Backup creation and restoration
-- Used by: america40, corpus-hub
-- Creates timestamped backups, manages retention
-
-**framework-context**: Load canonical framework definitions
-- Used by: america40
-- Ensures alignment with 7 principles and 14 roles
-
-**corpus-config**: Manage corpus configuration files
-- Used by: corpus-hub
-- Defines artifacts, terms, voice, roles
 
 ---
 
-## Ecosystem-Specific Guidance
+## Key Design Principles
 
-### CorpusHub Platform
+### Universal Availability
+Every skill works with every project type via configuration.
 
-**Project Location**: `G:\My Drive\Projects\CorpusHub`
+### Configuration-Driven
+Behavior determined by corpus-config.json, not hardcoded logic.
 
-**Architecture**:
-- Backend: Express.js with SQLite
-- Frontend: Vanilla JavaScript
-- API Base URL: `http://localhost:3000`
-- Plugin System: Each corpus has `corpus-config.json` under `plugins/<name>/`
+### CorpusHub Integration
+All skills integrate with CorpusHub production API at `http://localhost:3000`.
 
-**Multi-Corpus Support**:
-- Multiple corpora via hot-swap
-- Per-corpus databases in `data/corpora/<slug>.db`
-- Check active corpus before operations: `GET /api/corpora/active`
+### Size Optimization
+- Target: <15KB per SKILL.md
+- Detailed content in `references/` subdirectories
+- Current: 100% compliance (14 skills, all under 15KB)
 
-**Key API Endpoints**:
-```bash
-# Health check
-GET /api/health
-
-# Corpus management
-GET /api/corpora              # List all corpora
-GET /api/corpora/active       # Get active corpus
-POST /api/corpora/register    # Register new corpus (admin)
-POST /api/corpora/switch      # Switch active corpus
-DELETE /api/corpora/:slug     # Unregister corpus (admin)
-
-# Artifacts
-GET /api/artifacts            # List all artifacts
-GET /api/artifacts/:id        # Get artifact details
-PUT /api/artifacts/:id        # Update artifact
-
-# Admin
-GET /api/admin/stats          # System statistics
-```
-
-**Project-Root Convention**:
-- Projects discovered by `corpus-config.json` at root
-- Template at `plugins/templates/application-project/corpus-config.json`
-
-### America 4.0 Framework
-
-**Framework Context**: Always load canonical sources for consistency
-- Principles: `03-specifications/v1.0/america40.comprehensive-framework-synthesis-streamlined.md`
-- Roles: `03-specifications/v1.0/america40.stakeholder-roles.md`
-- Style: `04-marketing/messaging/america40-style-guide.md`
-
-**Roles and Capabilities**:
-- **Reviewer**: Navigate artifacts, add comments/annotations, generate change plans
-- **Editor**: Make direct changes, preview consistency implications, track version history
-- **Author**: Draft new content with framework alignment and AI assistance
-
-**Reference Hub Webapp**: Located in `07-webapp/`
-- Provides web interface for framework documents
-- See `webapp-extensions/` for API specs, database schema, UI components
-
-### Windows Application Development
-
-**Development Phases**:
-1. **Requirements** (windows-app-requirements): User stories, acceptance criteria
-2. **System Design** (windows-app-system-design): Data models, API endpoints, architecture
-3. **UI Design** (windows-app-ui-design): Page inventory, navigation flows, forms
-4. **Build** (windows-app-build): Implementation, testing, validation
-5. **Deployment** (windows-app-supervision): NSSM service, health checks, MSI packaging
-
-**Security Integration**:
-- OAuth-first authentication pattern (authentication-patterns)
-- Cookie separation for security tokens
-- First-user becomes admin automatically
-- Input validation and CSRF protection (secure-coding-patterns)
-- Security checklists run during build phase
-
-**Reference Files**: windows-app-build has extensive references (124KB total):
-- `deployment-patterns.md`
-- `installer-patterns.md`
-- `error-catalog.md`
-- `plugin-integration.md`
-- `security-patterns.md`
-
-### Content Creation
-
-**HTML-First Workflow**:
-1. Create content in semantic HTML
-2. Export to platform-specific formats:
-   - DOCX (via Pandoc)
-   - PDF (via headless Chrome)
-   - PPTX (via Python script)
-   - Plain text (for social media)
-
-**Platform Support**:
-- Social Media: Bluesky, Twitter (character limits, threading)
-- Newsletter: Substack (HTML email formatting)
-- Website: Static sites (Jekyll, Hugo)
-- Journal: Academic publishing (citations, references)
-
-**Scripts**: Located in `publishing/content-creation-ecosystem/scripts/`
-- `init_content.py` - Initialize new content project
-- `validate_content.py` - Validate HTML structure
-- `convert_to_docx.py` - Export to Word
-- `convert_to_pdf.py` - Export to PDF
-- `bundle_content.py` - Package for distribution
+### Fool-Proof Design
+- Sensible defaults
+- Auto-detection
+- Clear error messages
+- Designed for all skill levels
 
 ---
 
-## Testing and Validation
+## Migration Status (v3.0 → v4.0)
 
-### Pre-Commit Checks
+**Current Status:** 50% Complete (Phase 1, Week 1)
 
-Before committing changes to skills:
+**Completed:**
+- ✅ Planning & Documentation (100%)
+- ✅ Core Corpus Skills (6/6 - 100%)
+- ✅ Critical Audit Skills (7/12 - 58%)
+- ✅ Config Templates (5/6 - 83%)
+- ✅ review-edit-author (consolidates 6 old skills)
 
-1. **Frontmatter Validation**: Run `python tools/quick_validate.py` on modified skills
-2. **Size Check**: Verify SKILL.md files stay under 15KB target (or document exception)
-3. **Cross-References**: Ensure all reference file links resolve correctly
-4. **Documentation**: Update README.md if skill behavior changed
+**In Progress:**
+- ⏳ Remaining Audit Skills (5/12)
+- ⏳ Content Management (3/4)
+- ⏳ Development & Publishing (4 skills)
+- ⏳ Utilities (4 skills)
+- ⏳ Documentation (7 docs)
 
-### Integration Testing
-
-Test multi-skill workflows:
-
-1. **Orchestrator Routing**: Verify orchestrators route to correct sub-skills
-2. **Cross-Skill Coordination**: Test hand-offs between related skills
-3. **Reference Loading**: Ensure reference files load when needed
-4. **Error Handling**: Verify error messages are actionable
-
-### Navigation Auditing
-
-Use navigation-auditor skill to verify:
-- All documented navigation paths work
-- No orphaned skills (unreachable)
-- No circular dependencies
-- All orchestrators have valid routes
-
----
-
-## File Naming Conventions
-
-**Skills**: `skill-name-in-kebab-case/`
-- Examples: `skill-ecosystem-manager/`, `windows-app-build/`, `corpus-init/`
-
-**Orchestrators**: `category-orchestrator/`
-- Examples: `windows-app-orchestrator/`, `security-patterns-orchestrator/`
-
-**Reference Files**: `descriptive-name.md`
-- Examples: `deployment-patterns.md`, `social-media.md`, `api-specifications.md`
-
-**Logs**: `ERROR-AND-FIXES-LOG.md`, `CHANGELOG.md`
-
-**Metadata**: `SKILL.md`, `README.md`, `CLAUDE.md`
-
----
-
-## Known Issues and Exceptions
-
-### Size Exceptions
-
-**windows-app-build**: 17KB (13% over target)
-- **Justification**: Core implementation skill with complex decision trees
-- **Mitigation**: Extracted 124KB to reference files (deployment, installer, error catalog)
-
-**content-creation-ecosystem**: 14KB (within buffer)
-- **Justification**: Multi-platform content creation with format-specific guidance
-- **Mitigation**: Platform details in reference files
-
-### Git Status Anomalies
-
-The repository shows unusual untracked files with encoding issues:
-```
-?? "windows-app/windows-app-build/references´Ç³ && cp C´Ǧ..."
-```
-
-These appear to be shell command artifacts and should be cleaned:
-```bash
-git clean -fd
-```
+See `IMPLEMENTATION-STATUS.md` for detailed progress.
 
 ---
 
 ## Version History
 
+### v4.0.0 (2026-01-31) - Universal Architecture
+
+**Major Reorganization:**
+- Two-tier universal architecture (core + config)
+- Corpus-first approach (every project corpus-enabled)
+- Multi-methodology 3-3-1 convergence
+- Source modes (corpus/source/bidirectional)
+- Configuration-driven behavior
+
+**New Skills (14 implemented):**
+- 6 corpus management skills
+- 7 audit skills (+ 5 WIP)
+- 1 universal content management skill
+
+**Total Skills (Projected):** 27 core skills
+**Current Status:** 14 complete, 13 WIP
+
 ### v3.0.0 (2026-01-31) - Multi-Ecosystem Expansion
 
-**Added**:
-- America 4.0 Review & Update System (7+ skills)
-- CorpusHub Platform (10+ skills)
-- corpus-hub-v2 (in development)
+**Added:**
+- America 4.0 framework (7+ skills)
+- CorpusHub platform (10+ skills)
+- 5 major categories
 
-**Updated**:
-- CLAUDE.md to reflect current architecture
-- Documentation to cover all five ecosystems
-
-**Total Skills**: 36+ across 5 major categories
+**Total Skills:** 36+ across 5 categories
 
 ### v2.0.0 (2026-01-27) - Comprehensive Restructure
 
-**Changes**:
-- Flat → 3-tier directory structure
-- Created security-patterns-orchestrator, publishing-orchestrator
-- Condensed windows-app-build from 40KB to 17KB
-- Added 20 README files, 10 reference files (153KB)
+**Changes:**
+- Flat → 3-tier structure
+- Security orchestrator
+- Publishing orchestrator
+- Size optimization
 
-**Total Skills**: 15 (meta, windows-app, publishing)
+**Total Skills:** 15
 
 ### v1.0.0 (2026-01-20) - Initial Version
 
-- 13 skills in flat structure
-- Basic documentation
-- windows-app-build 40KB (oversized)
-
----
-
-## Contributing
-
-### Creating New Skills
-
-1. Use `skill-ecosystem-manager` skill to design new skills
-2. Follow size guidelines (<15KB SKILL.md)
-3. Extract verbose content to `references/` subdirectory
-4. Create `README.md` with quick reference
-5. Update category `README.md`
-6. Run `python tools/quick_validate.py` before committing
-
-### Improving Existing Skills
-
-1. Log issue in skill's `ERROR-AND-FIXES-LOG.md`
-2. Create regression test for the error
-3. Update SKILL.md or reference files
-4. Increment version in `CHANGELOG.md`
-5. Validate with quick_validate.py
-
-### Refactoring Skills
-
-**When to refactor**:
-- Skill significantly exceeds 15KB
-- Multiple skills have overlapping functionality
-- New patterns emerge from error logs
-- User feedback indicates confusion
-
-**Process**:
-1. Use conversation-snapshot to preserve context
-2. Analyze current skill structure
-3. Plan refactoring (extract vs consolidate)
-4. Implement changes incrementally
-5. Validate continuously
-6. Update all cross-references
-7. Document in CHANGELOG.md
+**Initial Release:** 13 skills in flat structure
 
 ---
 
@@ -604,5 +472,6 @@ Proprietary - Pterodactyl Holdings, LLC
 ---
 
 *Last Updated: 2026-01-31*
-*Version: 3.0.0*
-*Total Skills: 36+ across 5 major ecosystems*
+*Version: 4.0.0*
+*Branch: v4.0-reorganization*
+*Status: 50% Complete - In Active Development*

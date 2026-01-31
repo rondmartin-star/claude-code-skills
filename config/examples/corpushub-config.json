@@ -1,0 +1,289 @@
+{
+  "_comment": "Real CorpusHub project configuration example",
+
+  "corpus": {
+    "name": "CorpusHub Platform",
+    "description": "Plugin-based corpus management platform with web interface and REST API",
+    "version": "2.0.0",
+    "baseDir": "G:\\My Drive\\Projects\\CorpusHub"
+  },
+
+  "artifacts": {
+    "source-code": {
+      "path": "src",
+      "label": "Source Code",
+      "extensions": [".js", ".jsx"],
+      "sourceMode": "source"
+    },
+    "api-code": {
+      "path": "src/api",
+      "label": "API Endpoints",
+      "extensions": [".js"],
+      "sourceMode": "source"
+    },
+    "frontend-code": {
+      "path": "public",
+      "label": "Frontend UI",
+      "extensions": [".js", ".html", ".css"],
+      "sourceMode": "source"
+    },
+    "tests": {
+      "path": "tests",
+      "label": "Test Suite",
+      "extensions": [".test.js", ".spec.js"],
+      "sourceMode": "source"
+    },
+    "documentation": {
+      "path": "docs",
+      "label": "Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "api-docs": {
+      "path": "docs/api",
+      "label": "API Documentation",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "specifications": {
+      "path": "docs/specifications",
+      "label": "Technical Specifications",
+      "extensions": [".md"],
+      "sourceMode": "corpus"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "corpus-concepts",
+        "label": "Corpus Management Concepts",
+        "terms": [
+          "corpus-config.json",
+          "artifact",
+          "source mode",
+          "bidirectional sync",
+          "framework term",
+          "canonical source",
+          "CorpusHub plugin"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "api-patterns",
+        "label": "API Patterns",
+        "terms": [
+          "REST endpoint",
+          "SQLite database",
+          "multi-corpus support",
+          "hot-swap",
+          "per-corpus isolation"
+        ],
+        "canonicalSource": "api-docs",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "role-system",
+        "label": "Role System",
+        "terms": [
+          "reviewer",
+          "editor",
+          "author",
+          "admin",
+          "viewer",
+          "pending"
+        ],
+        "canonicalSource": "specifications",
+        "matchMode": "exact"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "docs/voice/system-prompt.md",
+    "attributes": [
+      "technical",
+      "precise",
+      "developer-focused",
+      "clear"
+    ],
+    "avoid": [
+      "marketing language",
+      "vague abstractions",
+      "non-technical terminology"
+    ],
+    "preferredTerms": {
+      "corpus-config.json": "config",
+      "artifact": "document",
+      "REST endpoint": "API"
+    }
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "consistency": {
+    "enabled": true,
+    "scanDirectories": [
+      "src/",
+      "docs/",
+      "public/"
+    ]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+
+    "applicable_audits": [
+      "security",
+      "quality",
+      "navigation",
+      "dependency",
+      "consistency"
+    ],
+
+    "convergence": {
+      "enabled": true,
+
+      "automated": {
+        "max_iterations": 10,
+        "required_clean_passes": 3,
+        "approval_required": true
+      },
+
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2,
+        "test_scenarios": [
+          "multi-corpus-switching",
+          "plugin-registration",
+          "api-crud-operations",
+          "role-permissions",
+          "bidirectional-sync"
+        ]
+      },
+
+      "max_convergence_cycles": 5,
+
+      "methodologies": [
+        {
+          "name": "technical",
+          "description": "How the platform works",
+          "audits": [
+            {
+              "id": "security",
+              "config": {
+                "checks": [
+                  "sql_injection",
+                  "xss",
+                  "csrf",
+                  "file_upload_validation",
+                  "api_authentication"
+                ],
+                "exclude_patterns": ["test/**", "*.test.js"]
+              }
+            },
+            {
+              "id": "quality",
+              "config": {
+                "min_coverage": 75,
+                "max_complexity": 10,
+                "linting_config": ".eslintrc.json",
+                "check_dead_code": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "description": "How users experience the platform",
+          "audits": [
+            {
+              "id": "api-testing",
+              "config": {
+                "test_scenarios": [
+                  "corpus-registration",
+                  "corpus-switching",
+                  "artifact-crud",
+                  "comment-workflow",
+                  "plan-generation"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "holistic",
+          "description": "How the platform fits together",
+          "audits": [
+            {
+              "id": "documentation",
+              "config": {
+                "required": [
+                  "README.md",
+                  "docs/API.md",
+                  "docs/INSTALLATION.md",
+                  "docs/PLUGIN-SYSTEM.md"
+                ],
+                "check_api_coverage": true
+              }
+            },
+            {
+              "id": "dependency",
+              "config": {
+                "tools": ["npm_audit"],
+                "check_outdated": true,
+                "check_licenses": true
+              }
+            },
+            {
+              "id": "consistency",
+              "config": {
+                "canonical_source": "corpus-config.json",
+                "scan_directories": ["src/", "docs/"],
+                "severity_threshold": "warning"
+              }
+            },
+            {
+              "id": "navigation",
+              "config": {
+                "check_internal_links": true,
+                "check_external_links": true,
+                "check_orphaned_pages": true,
+                "entry_points": ["README.md", "docs/index.md"]
+              }
+            }
+          ]
+        }
+      ],
+
+      "time_budgets": {
+        "discovery": "3-4 hours",
+        "verification": "2-3 hours",
+        "stabilization": "1-2 hours",
+        "total_target": "8-12 hours"
+      },
+
+      "success_criteria": {
+        "automated": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 0
+        },
+        "user_validation": {
+          "critical_issues": 0,
+          "high_issues": 0,
+          "medium_issues": 3,
+          "api_success_rate": "100%",
+          "multi_corpus_reliability": "100%"
+        }
+      }
+    }
+  }
+}
