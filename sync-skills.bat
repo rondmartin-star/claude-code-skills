@@ -186,4 +186,12 @@ echo   See ARCHITECTURE-v4.md for complete documentation
 echo ============================================
 echo.
 
+:: Navigate to skills directory
+cd /d "%SKILLS_DIR%"
+echo Current directory: %SKILLS_DIR%
+echo.
+echo You are now in the skills directory.
+echo Press any key to exit, or close this window to stay here...
+echo.
+
 pause
