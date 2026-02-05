@@ -44,15 +44,19 @@ description: >
 
 **Core Concept:** Run multiple methodologies iteratively until 3 consecutive clean passes
 
-**Methodology Selection:** Random selection from pool of 5-10 orthogonal approaches
+**Methodology Selection:** Random selection from pool of 5-10 orthogonal approaches with priority constraint
 - Each clean pass uses a different methodology
 - Cannot reuse methodologies from previous clean passes
 - Pool resets when consecutive clean count resets to 0
+- **PRIORITY CONSTRAINT:** At least one functional/completeness or user-focused methodology must be selected in each clean sequence
 
 **Generic Algorithm:**
 ```
 WHILE consecutive_clean_passes < 3 AND iterations < max:
-  1. Select random methodology (not used in recent clean passes)
+  1. Select random methodology with priority constraint:
+     - If no priority methodology used yet in clean sequence, force priority selection
+     - Otherwise random from unused methodologies
+     - Cannot reuse methodologies from previous clean passes
   2. Execute selected methodology
   3. Verify results (with verify-evidence)
   4. If clean → increment counter, mark methodology as used
@@ -68,6 +72,14 @@ Result: Converged (3 clean) OR Failed (max iterations)
 - **audit:** Code quality convergence (technical/user/holistic)
 - **phase-review:** Deliverable quality convergence (top-down/bottom-up/lateral)
 - **custom:** Define your own methodologies
+
+**Priority Constraint Rationale:**
+The convergence engine ensures that at least one functional/completeness or user-focused methodology is always selected in each clean pass sequence. This guarantees that:
+- **Functional completeness** is verified (does it work?)
+- **User needs** are validated (does it solve the problem?)
+- These fundamental concerns are never skipped in favor of only secondary concerns (performance, security, consistency, etc.)
+
+Without this constraint, random selection could theoretically produce 3 clean passes using only secondary methodologies (e.g., performance, security, consistency), missing critical functional or user-focused validation.
 
 ---
 
@@ -194,16 +206,16 @@ await multiMethodologyConvergence.run({
 **Purpose:** Phase deliverable quality convergence
 
 **Methodology Pool (8 orthogonal approaches):**
-1. **Top-Down-Requirements:** Requirements → Deliverables (completeness check)
+1. **Top-Down-Requirements:** Requirements → Deliverables (completeness check) ⭐ PRIORITY
 2. **Top-Down-Architecture:** Architecture → Implementation (design alignment)
 3. **Bottom-Up-Quality:** Code/Artifacts → Standards (quality validation)
 4. **Bottom-Up-Consistency:** Low-level → High-level (internal consistency)
 5. **Lateral-Integration:** Component interfaces and boundaries
 6. **Lateral-Security:** Security architecture and implementation
 7. **Lateral-Performance:** Performance characteristics and bottlenecks
-8. **Lateral-UX:** User experience and interaction flows
+8. **Lateral-UX:** User experience and interaction flows ⭐ PRIORITY
 
-**Selection:** Random (constraint: no reuse in current clean pass sequence)
+**Selection:** Random with constraint: At least one of methodologies 1 or 8 (functional/user-focused) must be selected in each pass. No reuse in current clean pass sequence.
 
 **Configuration:**
 ```javascript
@@ -275,9 +287,31 @@ async function executeConvergence(config) {
       unusedMethodologies.push(...state.availableMethodologies);
     }
 
-    // Random selection from unused methodologies
-    const randomIndex = Math.floor(Math.random() * unusedMethodologies.length);
-    const methodology = unusedMethodologies[randomIndex];
+    // CONSTRAINT: Ensure at least one functional/user-focused methodology in clean sequence
+    // Check if any priority methodology has been used in current clean sequence
+    const priorityMethodologies = config.methodologies.filter(m => m.priority === true);
+    const priorityUsedInCleanSequence = Array.from(state.usedMethodologiesInCleanSequence).some(
+      usedName => priorityMethodologies.some(pm => pm.name === usedName)
+    );
+
+    const unusedPriorityMethodologies = unusedMethodologies.filter(m =>
+      priorityMethodologies.some(pm => pm.name === m.name)
+    );
+
+    // Force selection of priority methodology if:
+    // 1. No priority methodology used yet in this clean sequence, AND
+    // 2. Priority methodologies are still available
+    let methodology;
+    if (!priorityUsedInCleanSequence && unusedPriorityMethodologies.length > 0) {
+      // Force priority methodology selection (functional/user-focused)
+      const randomIndex = Math.floor(Math.random() * unusedPriorityMethodologies.length);
+      methodology = unusedPriorityMethodologies[randomIndex];
+      console.log('→ PRIORITY methodology selected (functional/user-focused required)');
+    } else {
+      // Random selection from all unused methodologies
+      const randomIndex = Math.floor(Math.random() * unusedMethodologies.length);
+      methodology = unusedMethodologies[randomIndex];
+    }
 
     console.log(`\n--- Pass ${passNumber}: ${methodology.name} (random selection) ---`);
     console.log(`Description: ${methodology.description || '(no description)'}`);
@@ -502,6 +536,7 @@ const AUDIT_MODE_PRESET = {
     {
       name: 'technical',
       description: 'How it\'s built (security, code-quality, performance)',
+      priority: true,  // PRIORITY: Functional/completeness focused
       executor: async (data) => {
         const results = await runAudits(data, [
           'security-architecture',
@@ -517,6 +552,7 @@ const AUDIT_MODE_PRESET = {
     {
       name: 'user',
       description: 'How it\'s experienced (accessibility, ux)',
+      priority: true,  // PRIORITY: User-focused
       executor: async (data) => {
         const results = await runAudits(data, [
           'accessibility',
@@ -592,6 +628,7 @@ const PHASE_REVIEW_MODE_PRESET = {
     {
       name: 'top-down',
       description: 'Requirements → Implementation (completeness)',
+      priority: true,  // PRIORITY: Functional/completeness focused
       executor: async (data) => {
         const issues = [];
         const { phase, deliverables, requirements } = data;
@@ -660,7 +697,8 @@ const PHASE_REVIEW_MODE_PRESET = {
     },
     {
       name: 'lateral',
-      description: 'Cross-cutting concerns (integration)',
+      description: 'Cross-cutting concerns (integration, ux)',
+      priority: true,  // PRIORITY: User-focused (includes UX review)
       executor: async (data) => {
         const issues = [];
         const { phase, deliverables } = data;
