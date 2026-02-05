@@ -3,13 +3,15 @@ name: core-orchestrator
 description: >
   Main orchestrator for v4.0 Universal Skills Ecosystem. Routes users to appropriate
   skills based on intent: corpus management, auditing, content work, or utilities.
+  Integrates battle-plan learning workflow for medium/complex tasks.
   Use when: starting new tasks, unclear which skill to use, or navigating ecosystem.
 ---
 
 # Core Orchestrator
 
-**Purpose:** Universal ecosystem navigation and routing
+**Purpose:** Universal ecosystem navigation and routing with learning-first architecture
 **Type:** Orchestrator Skill (Entry Point)
+**Learning Integration:** Routes complex tasks through battle-plan variants
 
 ---
 
@@ -20,6 +22,176 @@ This is the main entry point for the v4.0 Universal Skills Ecosystem. Load when:
 - Intent is unclear
 - Multiple skills might apply
 - User asks "what can you do?"
+
+---
+
+## Learning-First Architecture
+
+**Philosophy:** Medium/complex tasks flow through battle-plan learning workflow
+
+**Routing Flow:**
+```
+User Request
+    ↓
+Assess Complexity (trivial/simple/medium/complex)
+    ↓
+├─ Trivial → Direct execution (skip battle-plan)
+├─ Simple → Pattern-check only → Direct execution
+└─ Medium/Complex → Battle-Plan Variant → Execution
+    ├─ Corpus operations → corpus-battle-plan
+    ├─ Audit operations → audit-battle-plan
+    └─ Content operations → content-battle-plan
+```
+
+**Complexity Assessment Criteria:**
+```javascript
+function assessComplexity(userRequest, context = {}) {
+  const indicators = {
+    trivial: [
+      /^(list|show|display|get|what is)\b/i,  // Read-only queries
+      /^help\b/i,                              // Help requests
+      context.wordCount < 5                    // Very short requests
+    ],
+    simple: [
+      /^(check|verify|validate)\b.*single/i,   // Single-item checks
+      /^(read|view)\b/i,                       // Read operations
+      context.estimatedFiles === 1             // Single file operation
+    ],
+    medium: [
+      /\b(initialize|configure|create|setup)\b/i,  // Setup operations
+      /\b(fix|update|modify)\b.*multiple/i,        // Multi-item changes
+      /\b(review|edit)\b.*document/i,              // Document work
+      context.estimatedFiles > 1 && context.estimatedFiles < 5
+    ],
+    complex: [
+      /\b(migrate|convert|refactor)\b/i,           // Structural changes
+      /\b(implement|build|develop)\b/i,            // New features
+      /\b(convergence|3-3-1)\b/i,                  // Multi-audit convergence
+      /\b(architectural|design)\b/i,               // Architectural decisions
+      context.estimatedFiles >= 5,                 // Many files affected
+      context.multipleAudits === true,             // Multiple audit types
+      context.hasRisks === true                    // User-facing or risky changes
+    ]
+  };
+
+  // Check indicators in order (complex → trivial)
+  for (const complexity of ['complex', 'medium', 'simple', 'trivial']) {
+    const matches = indicators[complexity].filter(indicator => {
+      if (typeof indicator === 'boolean') return indicator;
+      if (indicator instanceof RegExp) return indicator.test(userRequest);
+      return false;
+    });
+
+    if (matches.length > 0) {
+      return {
+        level: complexity,
+        confidence: matches.length / indicators[complexity].length,
+        indicators: matches.map(m => m.toString())
+      };
+    }
+  }
+
+  // Default to medium if unclear
+  return { level: 'medium', confidence: 0.5, indicators: ['default'] };
+}
+```
+
+**Battle-Plan Variant Selection:**
+```javascript
+function selectBattlePlanVariant(category, userRequest) {
+  // Map categories to battle-plan variants
+  const variantMap = {
+    corpus: 'corpus-battle-plan',
+    audit: 'audit-battle-plan',
+    content: 'content-battle-plan',
+    utility: null  // Utilities skip battle-plan (usually simple operations)
+  };
+
+  const variant = variantMap[category];
+
+  if (!variant) {
+    // No specific variant - use master battle-plan
+    return 'battle-plan';
+  }
+
+  return variant;
+}
+```
+
+**Enhanced Routing with Battle-Plan:**
+```javascript
+async function routeWithBattlePlan(userRequest, context = {}) {
+  // Step 1: Assess complexity
+  const complexity = assessComplexity(userRequest, context);
+  console.log(`Task complexity: ${complexity.level} (${Math.round(complexity.confidence * 100)}% confidence)`);
+
+  // Step 2: Determine category
+  const category = detectCategory(userRequest);  // corpus, audit, content, utility
+
+  // Step 3: Get target skill
+  const targetSkill = await routeToSkill(userRequest, context);
+
+  // Step 4: Apply battle-plan routing based on complexity
+  if (complexity.level === 'trivial') {
+    // Trivial: Skip battle-plan entirely
+    console.log('Trivial task - executing directly');
+    return { skill: targetSkill.skill, battlePlan: null };
+  }
+
+  if (complexity.level === 'simple') {
+    // Simple: Pattern-check only (no full battle-plan)
+    console.log('Simple task - checking patterns only');
+    const patterns = await patternLibrary.findRelevant({
+      description: userRequest,
+      category: category
+    });
+
+    if (patterns.length > 0) {
+      console.log(`Found ${patterns.length} relevant patterns`);
+    }
+
+    return { skill: targetSkill.skill, battlePlan: null, patterns };
+  }
+
+  // Medium or Complex: Full battle-plan workflow
+  console.log(`${complexity.level} task - using battle-plan workflow`);
+  const battlePlanVariant = selectBattlePlanVariant(category, userRequest);
+
+  return {
+    skill: targetSkill.skill,
+    battlePlan: battlePlanVariant,
+    complexity: complexity.level,
+    workflow: 'full'
+  };
+}
+```
+
+**Battle-Plan Execution:**
+```javascript
+async function executeWithBattlePlan(routing) {
+  if (!routing.battlePlan) {
+    // No battle-plan - execute directly
+    return await loadSkill(routing.skill);
+  }
+
+  // Load battle-plan variant
+  console.log(`\n═══ BATTLE-PLAN WORKFLOW ═══`);
+  console.log(`Variant: ${routing.battlePlan}`);
+  console.log(`Target skill: ${routing.skill}`);
+  console.log(`Complexity: ${routing.complexity}\n`);
+
+  const battlePlan = await loadSkill(routing.battlePlan);
+
+  // Battle-plan will sequence through 8 phases and eventually execute target skill
+  const result = await battlePlan.execute({
+    targetSkill: routing.skill,
+    userRequest: routing.userRequest,
+    complexity: routing.complexity
+  });
+
+  return result;
+}
+```
 
 ---
 
@@ -210,12 +382,16 @@ function routeUtilityIntent(userMessage) {
 
 ## Main Routing Logic
 
+**Enhanced routing with battle-plan integration:**
+
 **Priority order:**
 1. Explicit skill name mentioned
 2. Utility operations (backup, export)
 3. Audit operations
 4. Corpus management
 5. Content management
+
+**Then apply complexity-based battle-plan routing**
 
 ```javascript
 async function routeToSkill(userMessage, context = {}) {
@@ -224,40 +400,257 @@ async function routeToSkill(userMessage, context = {}) {
   // 1. Check for explicit skill name
   const explicitSkill = checkExplicitSkillName(message);
   if (explicitSkill) {
-    return { skill: explicitSkill, confidence: 'high' };
+    return { skill: explicitSkill, confidence: 'high', category: detectCategoryFromSkill(explicitSkill) };
   }
 
   // 2. Check utilities (high priority, specific actions)
   const utilitySkill = routeUtilityIntent(message);
   if (utilitySkill) {
-    return { skill: utilitySkill, confidence: 'high' };
+    return { skill: utilitySkill, confidence: 'high', category: 'utility' };
   }
 
   // 3. Check audit operations
   if (/\b(audit|check|validate|scan|analyze)\b/i.test(message)) {
     const auditSkill = routeAuditIntent(message);
-    return { skill: auditSkill, confidence: 'high' };
+    return { skill: auditSkill, confidence: 'high', category: 'audit' };
   }
 
   // 4. Check corpus management
   if (/\bcorpus\b/i.test(message)) {
     const corpusSkill = routeCorpusIntent(message);
-    return { skill: corpusSkill, confidence: 'medium' };
+    return { skill: corpusSkill, confidence: 'medium', category: 'corpus' };
   }
 
   // 5. Check content management
   if (/\b(review|edit|author|content|document)\b/i.test(message)) {
     const contentSkill = routeContentIntent(message);
-    return { skill: contentSkill, confidence: 'medium' };
+    return { skill: contentSkill, confidence: 'medium', category: 'content' };
   }
 
   // 6. No clear match - ask for clarification
   return {
     skill: null,
     confidence: 'low',
+    category: null,
     suggestions: getSuggestedSkills(message, context)
   };
 }
+
+function detectCategoryFromSkill(skillName) {
+  if (/corpus/.test(skillName)) return 'corpus';
+  if (/audit|convergence|fix/.test(skillName)) return 'audit';
+  if (/review|edit|author|content/.test(skillName)) return 'content';
+  if (/backup|export|restore/.test(skillName)) return 'utility';
+  return 'other';
+}
+
+/**
+ * MAIN ENTRY POINT: Enhanced routing with battle-plan integration
+ */
+async function route(userRequest, context = {}) {
+  // Step 1: Detect target skill and category
+  const routing = await routeToSkill(userRequest, context);
+
+  if (!routing.skill) {
+    // No skill matched - show suggestions
+    return {
+      action: 'clarify',
+      suggestions: routing.suggestions
+    };
+  }
+
+  // Step 2: Assess complexity
+  const complexity = assessComplexity(userRequest, {
+    ...context,
+    category: routing.category,
+    targetSkill: routing.skill
+  });
+
+  // Step 3: Determine if battle-plan is needed
+  const needsBattlePlan = complexity.level === 'medium' || complexity.level === 'complex';
+
+  if (!needsBattlePlan) {
+    // Trivial or simple - execute directly (optionally with pattern-check)
+    console.log(`${complexity.level} task - executing directly`);
+
+    if (complexity.level === 'simple') {
+      // Quick pattern check
+      const patterns = await patternLibrary.findRelevant({
+        description: userRequest,
+        category: routing.category
+      });
+
+      if (patterns.length > 0) {
+        console.log(`Found ${patterns.length} relevant patterns - applying automatically`);
+      }
+    }
+
+    return {
+      action: 'execute',
+      skill: routing.skill,
+      complexity: complexity.level,
+      battlePlan: null
+    };
+  }
+
+  // Step 4: Select battle-plan variant
+  const battlePlanVariant = selectBattlePlanVariant(routing.category, userRequest);
+
+  console.log(`\n═══ BATTLE-PLAN ROUTING ═══`);
+  console.log(`Complexity: ${complexity.level}`);
+  console.log(`Category: ${routing.category}`);
+  console.log(`Battle-plan variant: ${battlePlanVariant}`);
+  console.log(`Target skill: ${routing.skill}`);
+  console.log(`═══════════════════════════\n`);
+
+  return {
+    action: 'battle-plan',
+    skill: routing.skill,
+    battlePlan: battlePlanVariant,
+    complexity: complexity.level,
+    category: routing.category,
+    userRequest: userRequest
+  };
+}
+```
+
+---
+
+## Battle-Plan Integration Examples
+
+### Example 1: Trivial Task (No Battle-Plan)
+
+```
+User: "List all corpus configurations"
+
+Assessment:
+  - Complexity: TRIVIAL (read-only query)
+  - Category: corpus
+  - Target skill: corpus-config
+
+Routing:
+  - Battle-plan: NO (trivial task)
+  - Action: Execute directly
+
+Result: Load corpus-config skill and list configurations
+```
+
+### Example 2: Simple Task (Pattern-Check Only)
+
+```
+User: "Check if this file has accessibility issues"
+
+Assessment:
+  - Complexity: SIMPLE (single-file check)
+  - Category: audit
+  - Target skill: audits/accessibility
+
+Routing:
+  - Battle-plan: NO (simple task)
+  - Pattern-check: YES
+  - Action: Quick pattern lookup → Execute directly
+
+Result:
+  - Found pattern: "wcag-validation-common-issues" (8 applications, 94% success)
+  - Apply pattern automatically
+  - Execute accessibility audit with known patterns
+```
+
+### Example 3: Medium Task (Full Battle-Plan)
+
+```
+User: "Initialize this as a corpus with code quality audits"
+
+Assessment:
+  - Complexity: MEDIUM (initialization, multiple files)
+  - Category: corpus
+  - Target skill: corpus-init
+
+Routing:
+  - Battle-plan: YES
+  - Variant: corpus-battle-plan
+  - Action: Full battle-plan workflow
+
+Result:
+═══ BATTLE-PLAN WORKFLOW ═══
+Variant: corpus-battle-plan
+Target skill: corpus-init
+Complexity: medium
+
+PHASE 1: CLARIFICATION
+  Q: Which audits? → Code quality
+  Q: Initialize where? → /users/project (confirmed)
+  ✓ Scope clarified
+
+PHASE 2: KNOWLEDGE CHECK
+  ✓ Found pattern: corpus-init-directory-structure (15 uses, 93% success)
+  ⚠️ Antipattern: wrong-directory-init (3 occurrences)
+
+PHASE 3: PRE-MORTEM
+  Risk #1: Wrong directory (likelihood: 3, impact: 4)
+    Prevention: Confirm directory with user
+  Risk #2: Overwrite existing (likelihood: 2, impact: 5)
+    Prevention: Check for existing .corpus/
+  Recommendation: GO (with confirmations)
+
+PHASE 4: CONFIRMATION
+  About to initialize corpus in: /users/project
+  Proceed? [Y/n] → YES
+
+PHASE 5: EXECUTION
+  [corpus-init executes with monitoring]
+
+PHASE 7: DECLARE COMPLETE
+  ✓ SHIPPABLE (all requirements met)
+
+PHASE 8: PATTERN UPDATE
+  Updated pattern: corpus-init-directory-structure (16 applications, 93.75% success)
+```
+
+### Example 4: Complex Task (Full Battle-Plan)
+
+```
+User: "Run convergence to fix all code quality and security issues"
+
+Assessment:
+  - Complexity: COMPLEX (multiple audits, many fixes, GATE convergence)
+  - Category: audit
+  - Target skill: convergence-engine
+
+Routing:
+  - Battle-plan: YES
+  - Variant: audit-battle-plan
+  - Action: Full battle-plan workflow
+
+Result:
+═══ BATTLE-PLAN WORKFLOW ═══
+Variant: audit-battle-plan
+Target skill: convergence-engine
+Complexity: complex
+
+PHASE 2: KNOWLEDGE CHECK
+  ✓ Found 45 fix patterns in library
+  ⚠️ Antipattern: fix-symptom-not-cause (8 occurrences)
+
+PHASE 3: PRE-MORTEM
+  Risk #1: Fixes break functionality (likelihood: 4, impact: 5)
+    Prevention: Run tests after each fix
+  Risk #2: GATE doesn't converge (likelihood: 3, impact: 4)
+    Prevention: detect-infinite-loop, fix root causes
+  Recommendation: GO WITH CAUTION
+
+PHASE 5: EXECUTION
+  [convergence-engine runs with full monitoring]
+  - verify-evidence checkpoints
+  - detect-infinite-loop protection
+  - manage-context for long sessions
+
+PHASE 7: DECLARE COMPLETE
+  ✓ SHIPPABLE (3 clean GATE passes)
+
+PHASE 8: PATTERN UPDATE
+  - 3 new fix patterns saved
+  - 2 antipatterns updated
 ```
 
 ---
@@ -357,48 +750,149 @@ Which one would you like to use? Or provide more details about what you'd like t
 
 ---
 
-## Quick Decision Tree
+## Quick Decision Tree (Enhanced with Battle-Plan)
 
 ```
 User Request
     │
-    ├─ Mentions specific skill name? → Load that skill
+    ├─ Mentions specific skill name? → Detect category → Assess complexity
     │
-    ├─ Backup/Export/Restore? → Utilities
+    ├─ Backup/Export/Restore? → Utilities → Assess complexity
     │
-    ├─ Audit/Check/Validate?
+    ├─ Audit/Check/Validate? → Detect audit type → Assess complexity
     │   ├─ Quality/Security/Performance/Dependency? → Technical audits
     │   ├─ Content/A11y/SEO? → User audits
     │   ├─ Consistency/Navigation? → Corpus audits
     │   └─ Convergence/Fix? → Holistic orchestration
     │
-    ├─ Corpus/Initialize/Configure? → Corpus management
+    ├─ Corpus/Initialize/Configure? → Corpus management → Assess complexity
     │
-    ├─ Review/Edit/Author? → Content management
+    ├─ Review/Edit/Author? → Content management → Assess complexity
     │
     └─ Unclear → Show welcome message & get clarification
+
+        ↓ (After skill detection)
+
+    COMPLEXITY ASSESSMENT
+        │
+        ├─ TRIVIAL (read-only, help)
+        │   → Execute directly (no battle-plan)
+        │
+        ├─ SIMPLE (single-item checks)
+        │   → Pattern-check → Execute directly
+        │
+        ├─ MEDIUM (setup, multi-item, documents)
+        │   → Battle-Plan Variant → 8-Phase Workflow → Execute
+        │       ├─ Corpus category → corpus-battle-plan
+        │       ├─ Audit category → audit-battle-plan
+        │       └─ Content category → content-battle-plan
+        │
+        └─ COMPLEX (migrations, convergence, architecture)
+            → Battle-Plan Variant → 8-Phase Workflow → Execute
+                ├─ Corpus category → corpus-battle-plan
+                ├─ Audit category → audit-battle-plan
+                └─ Content category → content-battle-plan
+```
+
+**8-Phase Battle-Plan Workflow:**
+```
+1. CLARIFY-REQUIREMENTS (force problem articulation)
+2. PATTERN-LIBRARY (check known solutions)
+3. PRE-MORTEM (anticipate failures)
+4. CONFIRM-OPERATION (get user approval)
+5. EXECUTE (with monitoring: verify-evidence, detect-infinite-loop, manage-context)
+6. ERROR-REFLECTION (if errors occurred)
+7. DECLARE-COMPLETE (block perfectionism)
+8. PATTERN-UPDATE (save learnings)
 ```
 
 ---
 
 ## Configuration
 
-No configuration needed - this skill routes based on user intent.
+**Battle-Plan Integration Settings:**
+
+```json
+{
+  "coreOrchestrator": {
+    "battlePlan": {
+      "enabled": true,
+      "complexityThresholds": {
+        "trivial": {
+          "useBattlePlan": false,
+          "usePatternCheck": false
+        },
+        "simple": {
+          "useBattlePlan": false,
+          "usePatternCheck": true
+        },
+        "medium": {
+          "useBattlePlan": true,
+          "variant": "auto"
+        },
+        "complex": {
+          "useBattlePlan": true,
+          "variant": "auto"
+        }
+      },
+      "variantMapping": {
+        "corpus": "corpus-battle-plan",
+        "audit": "audit-battle-plan",
+        "content": "content-battle-plan",
+        "utility": null
+      },
+      "autoDetectComplexity": true,
+      "allowUserOverride": true
+    }
+  }
+}
+```
 
 ---
 
 ## Quick Reference
 
-**Route a request:**
+**Enhanced routing with battle-plan:**
 ```javascript
-const result = await routeToSkill(userMessage, context);
+// Main routing entry point
+const routing = await route(userRequest, context);
 
-if (result.skill) {
-  console.log(`Loading skill: ${result.skill}`);
-  await loadSkill(result.skill);
-} else {
-  console.log('Suggestions:', result.suggestions);
+if (routing.action === 'clarify') {
+  // No clear skill match
+  console.log('Suggestions:', routing.suggestions);
+  return;
 }
+
+if (routing.action === 'execute') {
+  // Trivial or simple - execute directly
+  console.log(`Executing ${routing.skill} (${routing.complexity})`);
+  await loadSkill(routing.skill);
+  return;
+}
+
+if (routing.action === 'battle-plan') {
+  // Medium or complex - use battle-plan workflow
+  console.log(`Using ${routing.battlePlan} for ${routing.skill}`);
+  const battlePlan = await loadSkill(routing.battlePlan);
+  const result = await battlePlan.execute({
+    targetSkill: routing.skill,
+    userRequest: routing.userRequest,
+    complexity: routing.complexity
+  });
+  return result;
+}
+```
+
+**Assess complexity manually:**
+```javascript
+const complexity = assessComplexity(userRequest, context);
+console.log(`Complexity: ${complexity.level} (${complexity.confidence * 100}% confidence)`);
+```
+
+**Select battle-plan variant:**
+```javascript
+const variant = selectBattlePlanVariant('corpus', userRequest);
+console.log(`Battle-plan variant: ${variant}`);  // corpus-battle-plan
 ```
 
 **Get all skills:**
@@ -409,6 +903,29 @@ console.log(`${skills.length} skills available`);
 
 ---
 
+## Integration with Learning Skills
+
+**Pattern Library:**
+- Trivial tasks: Skip entirely
+- Simple tasks: Quick lookup before execution
+- Medium/Complex tasks: Full pattern-library check in Phase 2 of battle-plan
+
+**Pre-Mortem:**
+- Only runs for medium/complex tasks (via battle-plan)
+- Uses category-specific risk databases
+
+**Monitoring:**
+- verify-evidence, detect-infinite-loop, manage-context only active during battle-plan execution
+- Trivial/simple tasks execute without monitoring overhead
+
+**Feedback Loop:**
+- Pattern library grows with each battle-plan execution
+- Antipatterns captured from ERROR-AND-FIXES-LOG.md files
+- Compound learning: each task builds on previous learnings
+
+---
+
 *End of Core Orchestrator*
 *Part of v4.0.0 Universal Skills Ecosystem*
 *Main entry point and navigation hub*
+*Enhanced with learning-first architecture via battle-plan integration*

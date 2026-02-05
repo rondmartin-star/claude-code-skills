@@ -1,0 +1,24 @@
+{
+  "initialization": [
+    {
+      "risk": "Initialize in wrong directory",
+      "likelihood": 3,
+      "impact": 4,
+      "prevention": "Verify pwd, show full path, ask user to confirm"
+    },
+    {
+      "risk": "Overwrite existing corpus",
+      "likelihood": 2,
+      "impact": 5,
+      "prevention": "Check for existing .corpus/, require explicit confirmation"
+    }
+  ],
+  "conversion": [
+    {
+      "risk": "Lose existing project files",
+      "likelihood": 2,
+      "impact": 5,
+      "prevention": "Create backup before conversion"
+    }
+  ]
+}

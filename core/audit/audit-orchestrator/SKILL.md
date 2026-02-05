@@ -1,17 +1,18 @@
 ---
 name: audit-orchestrator
 description: >
-  Comprehensive audit orchestrator that routes to applicable audit types and
-  coordinates convergence workflow for production readiness. Use when: running
-  pre-release audits, validating quality, ensuring production readiness, or
-  achieving stable clean state through iterative improvement.
+  Comprehensive audit orchestrator with learning-first architecture. Routes to applicable
+  audit types and coordinates convergence workflow for production readiness. Uses audit-battle-plan
+  for medium/complex operations. Use when: running pre-release audits, validating quality,
+  ensuring production readiness, or achieving stable clean state through iterative improvement.
 ---
 
 # Audit Orchestrator
 
-**Purpose:** Coordinate comprehensive audits and convergence workflow for production readiness
-**Size:** ~11 KB
+**Purpose:** Coordinate comprehensive audits and convergence with battle-plan integration
+**Size:** ~13 KB
 **Type:** Core Pattern (Universal - Available to all projects)
+**Learning Integration:** Uses audit-battle-plan for medium/complex audit operations
 
 ---
 
@@ -89,19 +90,113 @@ User can specify audits in corpus-config.json:
 
 ---
 
+## Complexity Assessment for Audit Operations
+
+**Before routing, assess complexity to determine if battle-plan workflow is needed:**
+
+```javascript
+function assessAuditComplexity(operation, context) {
+  const complexityIndicators = {
+    trivial: [
+      operation === 'single-audit' && context.readOnly === true,
+      context.auditCount === 1 && context.expectNoIssues === true
+    ],
+    simple: [
+      operation === 'single-audit' && context.auditCount === 1,
+      operation === 'quick-check',
+      context.reportOnly === true
+    ],
+    medium: [
+      operation === 'audit-all' && context.convergence === false,
+      operation === 'multi-audit' && context.auditCount <= 3,
+      operation === 'fix-issues' && context.issueCount < 10
+    ],
+    complex: [
+      operation === 'convergence',
+      operation === 'pre-release',
+      operation === 'audit-all' && context.convergence === true,
+      operation === 'fix-issues' && context.issueCount >= 10,
+      context.multipleMethodologies === true,
+      context.requiresGATE === true
+    ]
+  };
+
+  // Check from complex → trivial
+  for (const level of ['complex', 'medium', 'simple', 'trivial']) {
+    const matches = complexityIndicators[level].filter(indicator => indicator === true);
+    if (matches.length > 0) {
+      return {
+        level,
+        useBattlePlan: (level === 'medium' || level === 'complex'),
+        confidence: matches.length / complexityIndicators[level].length
+      };
+    }
+  }
+
+  // Default to medium
+  return { level: 'medium', useBattlePlan: true, confidence: 0.5 };
+}
+```
+
+**Complexity Examples:**
+
+| Operation | Complexity | Use Battle-Plan? | Reason |
+|-----------|------------|------------------|--------|
+| Single security audit (read-only) | Trivial | No | One audit, no fixes |
+| Quick quality check | Simple | No | Fast diagnostic |
+| Audit all (single-run) | Medium | Yes | Multiple audits, planning |
+| Fix 15 issues | Medium | Yes | Multi-step fixes, risks |
+| Convergence (3-3-1 GATE) | Complex | Yes | Iterative, GATE, risks |
+| Pre-release validation | Complex | Yes | Critical, comprehensive |
+
+**Battle-Plan Integration:**
+```javascript
+async function routeAuditWithComplexity(operation, context) {
+  const complexity = assessAuditComplexity(operation, context);
+
+  if (!complexity.useBattlePlan) {
+    // Trivial or simple - execute directly
+    console.log(`${complexity.level} audit - executing directly`);
+    return { skill: getSkillForOperation(operation), battlePlan: null };
+  }
+
+  // Medium or complex - use audit-battle-plan
+  console.log(`${complexity.level} audit - using audit-battle-plan`);
+  return {
+    skill: getSkillForOperation(operation),
+    battlePlan: 'audit-battle-plan',
+    complexity: complexity.level
+  };
+}
+```
+
+---
+
 ## Routing Decision Tree
+
+**Enhanced with complexity assessment and battle-plan routing:**
 
 ```
 1. Load corpus-config.json from project root
 2. Determine project type
 3. Check audit_config.applicable_audits
-4. If convergence requested:
-   → Load convergence-engine
-   → Run iterative audit workflow
-5. Else if specific audit requested:
-   → Route to specific audit skill
-6. Else (audit all):
-   → Load all applicable audits
+4. Assess operation complexity
+   ├─ Trivial/Simple → Execute directly (no battle-plan)
+   └─ Medium/Complex → Route through audit-battle-plan
+
+5. If convergence requested:
+   → ALWAYS use audit-battle-plan (complex by nature)
+   → Load convergence-engine via battle-plan
+   → Run iterative audit workflow with full monitoring
+
+6. Else if specific audit requested:
+   → Assess complexity
+   ├─ Simple (single audit, no fixes) → Direct execution
+   └─ Medium (fixes needed) → audit-battle-plan
+
+7. Else (audit all):
+   → ALWAYS use audit-battle-plan (medium complexity minimum)
+   → Load all applicable audits via battle-plan
    → Run once, report results
 ```
 
@@ -226,7 +321,7 @@ See: core/audit/convergence-engine/SKILL.md for detailed algorithm
 
 ## Workflow Examples
 
-### Example 1: Web App Pre-Release
+### Example 1: Web App Pre-Release (Complex - Battle-Plan Required)
 
 ```
 User: "Run convergence audit for pre-release"
@@ -234,8 +329,40 @@ User: "Run convergence audit for pre-release"
 → audit-orchestrator loads
 → Reads corpus-config.json: type = "web-app"
 → Applicable audits: security, performance, accessibility, seo, quality, navigation, dependency
-→ Loads convergence-engine
-→ Starts two-phase workflow
+
+Complexity Assessment:
+  - Operation: convergence
+  - Level: COMPLEX (iterative, GATE requirement, multiple methodologies)
+  - Use battle-plan: YES
+  - Reason: Critical pre-release validation with known risks
+
+→ Route through audit-battle-plan
+→ Load convergence-engine via battle-plan
+
+═══ AUDIT BATTLE-PLAN ═══
+Complexity: complex
+Target: convergence-engine
+Operation: pre-release validation
+
+PHASE 2: KNOWLEDGE CHECK
+  ✓ Found 45 fix patterns in library
+  ✓ Found pattern: eslint-auto-fix (124 applications, 96% success)
+  ⚠️ Antipattern: fix-symptom-not-cause (8 occurrences)
+
+PHASE 3: PRE-MORTEM
+  Risk #1: Fixes break functionality (likelihood: 4, impact: 5)
+    Prevention: Run tests after each fix
+  Risk #2: GATE doesn't converge (likelihood: 3, impact: 4)
+    Prevention: detect-infinite-loop, fix root causes
+  Recommendation: GO WITH CAUTION
+
+PHASE 4: CONFIRMATION
+  About to run convergence with 7 audit types
+  Will implement fixes automatically
+  Proceed? [Y/n] → YES
+
+PHASE 5: EXECUTION (with full monitoring)
+  → Starts two-phase workflow
 
 === Convergence Cycle 1 ===
 
@@ -308,16 +435,52 @@ PRODUCTION READY ✓
 - User validation: 0 issues
 - Total time: 6 hours
 - Total issues fixed: 30
+
+[During execution, battle-plan monitoring was active:]
+  - verify-evidence: 42 checkpoints (all passed)
+  - detect-infinite-loop: 0 loops detected
+  - manage-context: Chunked work after iteration 4 (context 78%)
+
+PHASE 7: DECLARE COMPLETE
+  Requirements Met:
+    - Core: 5/5 (100%) ✓
+      - All audits passing
+      - 3 clean GATE passes
+      - User validation clean
+      - No critical blockers
+      - Tests passing
+    - Important: 4/4 (100%) ✓
+  Status: ✓ SHIPPABLE (PRODUCTION READY)
+
+PHASE 8: PATTERN UPDATE
+  New patterns saved: 3
+    - xss-input-sanitization-fix (from security audit)
+    - accessibility-aria-label-auto-add (from a11y audit)
+    - performance-image-lazy-load (from perf audit)
+  Updated patterns: 5
+    - eslint-auto-fix (148 applications, 96% success)
+  Antipatterns updated: 1
+    - fix-symptom-not-cause (verified prevention works)
+
+✓ Pattern library updated with learnings from this convergence
 ```
 
-### Example 2: Content Corpus Quick Check
+### Example 2: Content Corpus Quick Check (Simple - No Battle-Plan)
 
 ```
-User: "Audit my framework docs"
+User: "Quick audit of framework docs - just show me issues"
 
 → audit-orchestrator loads
 → Reads corpus-config.json: type = "framework-docs"
 → Applicable audits: consistency, content, navigation
+
+Complexity Assessment:
+  - Operation: audit-all (single-run, report-only)
+  - Level: SIMPLE (read-only, no fixes)
+  - Use battle-plan: NO
+  - Reason: Quick diagnostic, no changes
+
+→ Execute directly (no battle-plan overhead)
 → Single-run mode (no convergence)
 
 Results:
@@ -328,6 +491,8 @@ Results:
 
 Fix suggestions provided
 User decides whether to apply
+
+[Battle-plan skipped for better UX - fast results for simple query]
 ```
 
 ### Example 3: Manual Audit Selection
@@ -405,19 +570,31 @@ See: core/audit/fix-planner/SKILL.md for implementation details
 
 ## Configuration Reference
 
-### Full corpus-config.json Audit Section
+### Full corpus-config.json Audit Section (with Battle-Plan Integration)
 
 ```json
 {
   "audit_config": {
     "auto_run": false,
+    "battle_plan": {
+      "enabled": true,
+      "variant": "audit-battle-plan",
+      "use_for_convergence": true,
+      "use_for_multi_audit": true,
+      "complexity_threshold": "medium"
+    },
     "convergence": {
       "enabled": true,
       "max_iterations": 10,
       "required_clean_passes": 3,
       "approval_required": true,
       "backup_before_fix": true,
-      "rollback_on_failure": true
+      "rollback_on_failure": true,
+      "use_monitoring": {
+        "verify_evidence": true,
+        "detect_infinite_loop": true,
+        "manage_context": true
+      }
     },
     "applicable_audits": [
       "consistency",
@@ -525,3 +702,5 @@ See: core/audit/fix-planner/SKILL.md for implementation details
 
 *End of Audit Orchestrator*
 *Part of v4.0.0 Universal Skills Ecosystem*
+*Learning Integration: Uses audit-battle-plan for medium/complex operations*
+*Convergence operations ALWAYS use battle-plan for safety and learning*

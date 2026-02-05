@@ -1,16 +1,18 @@
 ---
 name: corpus-orchestrator
 description: >
-  Route corpus management operations to specialized skills. Detects intent and
-  delegates to corpus-init, corpus-convert, corpus-config, source-mode-manager,
-  or corpus-detect. Use when: user mentions corpus operations but specific skill unclear.
+  Route corpus management operations to specialized skills with learning-first architecture.
+  Detects intent, assesses complexity, and delegates to corpus-init, corpus-convert, corpus-config,
+  source-mode-manager, or corpus-detect. Routes medium/complex tasks through corpus-battle-plan.
+  Use when: user mentions corpus operations but specific skill unclear.
 ---
 
 # Corpus Orchestrator
 
-**Purpose:** Route corpus management operations to specialized skills
-**Size:** ~8 KB
+**Purpose:** Route corpus management operations with battle-plan integration
+**Size:** ~10 KB
 **Type:** Core Orchestrator (Universal)
+**Learning Integration:** Uses corpus-battle-plan for medium/complex operations
 
 ---
 
@@ -39,6 +41,88 @@ description: >
 
 ---
 
+## Complexity Assessment for Corpus Operations
+
+**Before routing, assess task complexity to determine if battle-plan workflow is needed:**
+
+```javascript
+function assessCorpusComplexity(operation, context) {
+  const complexityIndicators = {
+    trivial: [
+      operation === 'status',
+      operation === 'check',
+      operation === 'verify',
+      context.readOnly === true
+    ],
+    simple: [
+      operation === 'configure' && context.singleSetting === true,
+      operation === 'detect',
+      context.noRisks === true
+    ],
+    medium: [
+      operation === 'init' || operation === 'initialize',
+      operation === 'configure' && context.multipleSettings === true,
+      operation === 'source-mode' && context.singleArtifact === true
+    ],
+    complex: [
+      operation === 'convert' || operation === 'migrate',
+      operation === 're-initialize',
+      operation === 'source-mode' && context.multipleArtifacts === true,
+      context.hasExistingContent === true,
+      context.requiresBackup === true
+    ]
+  };
+
+  // Check from complex → trivial
+  for (const level of ['complex', 'medium', 'simple', 'trivial']) {
+    const matches = complexityIndicators[level].filter(indicator => indicator === true);
+    if (matches.length > 0) {
+      return {
+        level,
+        useBattlePlan: (level === 'medium' || level === 'complex'),
+        confidence: matches.length / complexityIndicators[level].length
+      };
+    }
+  }
+
+  // Default to medium if unclear
+  return { level: 'medium', useBattlePlan: true, confidence: 0.5 };
+}
+```
+
+**Complexity Examples:**
+
+| Operation | Complexity | Use Battle-Plan? | Reason |
+|-----------|------------|------------------|--------|
+| corpus-detect (status check) | Trivial | No | Read-only, no changes |
+| corpus-config (single setting) | Simple | No | Single value update |
+| corpus-init (new project) | Medium | Yes | Multi-step setup, risks |
+| corpus-convert (existing) | Complex | Yes | Migration, backup, risks |
+| source-mode-manager (multi) | Complex | Yes | Multiple artifacts, sync |
+
+**Battle-Plan Integration:**
+```javascript
+async function routeWithComplexity(operation, context) {
+  const complexity = assessCorpusComplexity(operation, context);
+
+  if (!complexity.useBattlePlan) {
+    // Trivial or simple - execute directly
+    console.log(`${complexity.level} operation - executing directly`);
+    return { skill: getSkillForOperation(operation), battlePlan: null };
+  }
+
+  // Medium or complex - use corpus-battle-plan
+  console.log(`${complexity.level} operation - using corpus-battle-plan`);
+  return {
+    skill: getSkillForOperation(operation),
+    battlePlan: 'corpus-battle-plan',
+    complexity: complexity.level
+  };
+}
+```
+
+---
+
 ## Routing Decision Tree
 
 ### Step 1: Detect Corpus Status
@@ -60,54 +144,111 @@ return routeToManagement(projectContext);
 ### Step 2: Route to Setup (Not Corpus-Enabled)
 
 ```javascript
-function routeToSetup(context) {
+async function routeToSetup(context) {
   // Check if has existing content/structure
   const hasContent = checkForExistingContent(context.projectPath);
 
+  let operation, targetSkill;
+
   if (!hasContent || context.isNewProject) {
     // New project → Initialize
-    console.log('Routing to: corpus-init');
-    console.log('Reason: New project setup');
-    return loadSkill('corpus-init');
+    operation = 'init';
+    targetSkill = 'corpus-init';
+    console.log('Operation: Initialize new corpus');
+  } else {
+    // Existing project → Convert
+    operation = 'convert';
+    targetSkill = 'corpus-convert';
+    console.log('Operation: Convert existing project');
   }
 
-  // Existing project → Convert
-  console.log('Routing to: corpus-convert');
-  console.log('Reason: Existing project with content');
-  return loadSkill('corpus-convert');
+  // Assess complexity and route
+  const complexity = assessCorpusComplexity(operation, {
+    ...context,
+    hasExistingContent: hasContent,
+    requiresBackup: hasContent
+  });
+
+  if (!complexity.useBattlePlan) {
+    console.log(`Routing to: ${targetSkill} (direct execution)`);
+    return loadSkill(targetSkill);
+  }
+
+  // Use corpus-battle-plan for medium/complex operations
+  console.log(`\n═══ CORPUS BATTLE-PLAN ═══`);
+  console.log(`Complexity: ${complexity.level}`);
+  console.log(`Target skill: ${targetSkill}`);
+  console.log(`═══════════════════════════\n`);
+
+  const battlePlan = await loadSkill('corpus-battle-plan');
+  return await battlePlan.execute({
+    targetSkill,
+    userRequest: context.userMessage,
+    complexity: complexity.level,
+    context
+  });
 }
 ```
 
 ### Step 3: Route to Management (Corpus-Enabled)
 
 ```javascript
-function routeToManagement(context) {
+async function routeToManagement(context) {
   // Analyze user intent
   const intent = analyzeIntent(context.userMessage);
 
-  switch (intent.operation) {
-    case 'status':
-    case 'check':
-    case 'verify':
-      return loadSkill('corpus-detect');
+  // Map operation to skill
+  const operationMap = {
+    'status': { skill: 'corpus-detect', operation: 'status' },
+    'check': { skill: 'corpus-detect', operation: 'check' },
+    'verify': { skill: 'corpus-detect', operation: 'verify' },
+    'configure': { skill: 'corpus-config', operation: 'configure' },
+    'update-config': { skill: 'corpus-config', operation: 'configure' },
+    'change-artifacts': { skill: 'corpus-config', operation: 'configure' },
+    'sync': { skill: 'source-mode-manager', operation: 'source-mode' },
+    'source-modes': { skill: 'source-mode-manager', operation: 'source-mode' },
+    'bidirectional': { skill: 'source-mode-manager', operation: 'source-mode' },
+    're-initialize': { skill: 'corpus-init', operation: 'init' },
+    'reset': { skill: 'corpus-init', operation: 'init' }
+  };
 
-    case 'configure':
-    case 'update-config':
-    case 'change-artifacts':
-      return loadSkill('corpus-config');
+  const mapping = operationMap[intent.operation];
 
-    case 'sync':
-    case 'source-modes':
-    case 'bidirectional':
-      return loadSkill('source-mode-manager');
-
-    case 're-initialize':
-    case 'reset':
-      return loadSkill('corpus-init', { force: true });
-
-    default:
-      return provideGuidance(intent);
+  if (!mapping) {
+    return provideGuidance(intent);
   }
+
+  // Assess complexity
+  const complexity = assessCorpusComplexity(mapping.operation, {
+    ...context,
+    readOnly: (mapping.operation === 'status' || mapping.operation === 'check'),
+    singleSetting: intent.targetCount === 1,
+    multipleSettings: intent.targetCount > 1,
+    singleArtifact: intent.artifacts?.length === 1,
+    multipleArtifacts: intent.artifacts?.length > 1
+  });
+
+  if (!complexity.useBattlePlan) {
+    // Trivial or simple - execute directly
+    console.log(`Routing to: ${mapping.skill} (${complexity.level})`);
+    return loadSkill(mapping.skill, intent.options);
+  }
+
+  // Medium or complex - use corpus-battle-plan
+  console.log(`\n═══ CORPUS BATTLE-PLAN ═══`);
+  console.log(`Operation: ${intent.operation}`);
+  console.log(`Complexity: ${complexity.level}`);
+  console.log(`Target skill: ${mapping.skill}`);
+  console.log(`═══════════════════════════\n`);
+
+  const battlePlan = await loadSkill('corpus-battle-plan');
+  return await battlePlan.execute({
+    targetSkill: mapping.skill,
+    userRequest: context.userMessage,
+    complexity: complexity.level,
+    context,
+    options: intent.options
+  });
 }
 ```
 
@@ -206,7 +347,7 @@ function routeToManagement(context) {
 
 ## Routing Examples
 
-### Example 1: New Project
+### Example 1: New Project (Battle-Plan Workflow)
 
 ```
 User: "I want to set up corpus for this new project"
@@ -215,17 +356,59 @@ Analysis:
   - Intent: Initialize (new project)
   - Corpus Status: Not enabled
   - Context: New project
+  - Operation: init
+
+Complexity Assessment:
+  - Level: MEDIUM (initialization, multi-step)
+  - Use battle-plan: YES
+  - Reason: Initialization has risks, requires configuration decisions
 
 Routing Decision:
-  → corpus-init
+  → corpus-battle-plan → corpus-init
+
+Battle-Plan Workflow:
+═══ CORPUS BATTLE-PLAN ═══
+Complexity: medium
+Target skill: corpus-init
+
+PHASE 1: CLARIFICATION
+  Q: Which audits to enable?
+  Q: Confirm directory location?
+  ✓ Scope clarified
+
+PHASE 2: KNOWLEDGE CHECK
+  ✓ Found pattern: corpus-init-directory-structure (16 uses, 93% success)
+  ⚠️ Antipattern: wrong-directory-init (3 occurrences)
+
+PHASE 3: PRE-MORTEM
+  Risk #1: Wrong directory (likelihood: 3, impact: 4)
+    Prevention: Confirm pwd with user
+  Risk #2: Overwrite existing corpus (likelihood: 2, impact: 5)
+    Prevention: Check for .corpus/ directory
+  Recommendation: GO (with confirmations)
+
+PHASE 4: CONFIRMATION
+  About to initialize in: /users/project
+  Proceed? [Y/n] → YES
+
+PHASE 5: EXECUTION
+  [corpus-init executes with verify-evidence checkpoints]
+
+PHASE 7: DECLARE COMPLETE
+  ✓ SHIPPABLE (all requirements met)
+
+PHASE 8: PATTERN UPDATE
+  Updated pattern success rate
 
 Reasoning:
-  - New project with no existing content
-  - User wants to set up from scratch
-  - corpus-init handles initialization workflow
+  - Medium complexity operation
+  - Initialization requires user decisions (audits, structure)
+  - Has known risks (wrong directory, overwrite)
+  - corpus-battle-plan sequences clarification → pre-mortem → execution
+  - Builds institutional knowledge through pattern library
 ```
 
-### Example 2: Existing Project
+### Example 2: Existing Project (Complex - Battle-Plan Required)
 
 ```
 User: "Convert this existing documentation project to corpus"
@@ -234,33 +417,87 @@ Analysis:
   - Intent: Convert (existing → corpus)
   - Corpus Status: Not enabled
   - Context: Has existing content
+  - Operation: convert
+
+Complexity Assessment:
+  - Level: COMPLEX (migration, has existing content, requires backup)
+  - Use battle-plan: YES
+  - Reason: High-risk migration with data preservation requirements
 
 Routing Decision:
-  → corpus-convert
+  → corpus-battle-plan → corpus-convert
+
+Battle-Plan Workflow:
+═══ CORPUS BATTLE-PLAN ═══
+Complexity: complex
+Target skill: corpus-convert
+
+PHASE 2: KNOWLEDGE CHECK
+  ✓ Found pattern: backup-before-conversion (safety pattern)
+  ✓ Found pattern: preserve-existing-structure
+  ⚠️ Antipattern: no-backup-before-migration (2 data loss incidents)
+
+PHASE 3: PRE-MORTEM
+  Risk #1: Lose existing files (likelihood: 2, impact: 5)
+    Prevention: Create backup before conversion
+  Risk #2: Invalid project structure (likelihood: 3, impact: 3)
+    Prevention: Validate structure before conversion
+  Recommendation: GO WITH CAUTION (backup required)
+
+PHASE 4: CONFIRMATION
+  About to convert project with existing files
+  BACKUP REQUIRED before proceeding
+  Proceed? [Y/n] → YES
+
+PHASE 5: EXECUTION
+  ✓ Creating backup...
+  ✓ Validating project structure...
+  [corpus-convert executes with verify-evidence at each step]
+  ✓ Existing files preserved
+
+PHASE 7: DECLARE COMPLETE
+  ✓ SHIPPABLE (conversion complete, files preserved)
+
+PHASE 8: PATTERN UPDATE
+  Confirmed pattern: backup-before-conversion (successful application)
 
 Reasoning:
-  - Existing project with documentation
-  - Need to preserve existing structure
-  - corpus-convert handles migration
+  - Complex operation with data loss risk
+  - Existing content must be preserved
+  - Battle-plan enforces backup before conversion
+  - Pre-mortem identified critical risks
+  - Pattern library provided proven safety patterns
 ```
 
-### Example 3: Status Check
+### Example 3: Status Check (Trivial - No Battle-Plan)
 
 ```
 User: "Is this project corpus-enabled? What's the status?"
 
 Analysis:
   - Intent: Status check (informational)
-  - Operation: Diagnostic
+  - Operation: status
   - No changes requested
 
+Complexity Assessment:
+  - Level: TRIVIAL (read-only query)
+  - Use battle-plan: NO
+  - Reason: No risks, no changes, simple information retrieval
+
 Routing Decision:
-  → corpus-detect
+  → corpus-detect (direct execution)
+
+Execution:
+  - Load corpus-detect skill
+  - Execute status check
+  - Return results
 
 Reasoning:
-  - User wants information only
-  - corpus-detect provides comprehensive status
-  - No modification needed
+  - Trivial read-only operation
+  - No risks involved
+  - No battle-plan overhead needed
+  - Fast, direct execution provides better UX
+  - Pattern library not consulted (no value for simple query)
 ```
 
 ### Example 4: Configuration Update
@@ -481,6 +718,41 @@ await runWorkflow('migration', projectPath);
 
 ---
 
+## Configuration
+
+**Battle-Plan Integration Settings:**
+
+```json
+{
+  "corpusOrchestrator": {
+    "battlePlan": {
+      "enabled": true,
+      "variant": "corpus-battle-plan",
+      "complexityThresholds": {
+        "init": "medium",
+        "convert": "complex",
+        "configure": "simple",
+        "status": "trivial",
+        "source-mode": "medium"
+      },
+      "autoAssessComplexity": true,
+      "alwaysUseForConvert": true,
+      "requireBackupForConvert": true
+    }
+  }
+}
+```
+
+**Override complexity for specific operations:**
+```javascript
+await routeCorpusOperation('init', {
+  forceComplexity: 'complex',  // Use battle-plan even for init
+  skipBattlePlan: false
+});
+```
+
+---
+
 ## Skill Summary
 
 **Corpus Management Skills:**
@@ -499,3 +771,4 @@ await runWorkflow('migration', projectPath);
 *End of Corpus Orchestrator*
 *Part of v4.0.0 Universal Skills Ecosystem*
 *Routes to: corpus-init, corpus-convert, corpus-detect, corpus-config, source-mode-manager*
+*Learning Integration: Uses corpus-battle-plan for medium/complex operations*

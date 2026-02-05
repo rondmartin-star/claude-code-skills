@@ -1,0 +1,15 @@
+{
+  "id": "fix-symptom-not-cause",
+  "name": "Fix Symptom Not Root Cause",
+  "category": "audit-operations",
+  "problem": "Fixing surface-level symptoms instead of root causes leads to issues reappearing",
+  "examples": [
+    "Suppressing warning instead of fixing underlying issue",
+    "Adding eslint-disable comments instead of fixing code",
+    "Clearing cache instead of fixing caching logic"
+  ],
+  "prevention": "Always identify root cause with 5 Whys before implementing fix",
+  "occurrences": 0,
+  "tags": ["convergence", "root-cause", "anti-pattern"],
+  "severity": "high"
+}

@@ -1,0 +1,18 @@
+{
+  "newsletter": [
+    {
+      "risk": "Broken links in newsletter",
+      "likelihood": 3,
+      "impact": 3,
+      "prevention": "Validate all links before publishing"
+    }
+  ],
+  "blog": [
+    {
+      "risk": "Poor SEO (title, meta, headings)",
+      "likelihood": 3,
+      "impact": 4,
+      "prevention": "Apply blog-seo-optimization pattern"
+    }
+  ]
+}

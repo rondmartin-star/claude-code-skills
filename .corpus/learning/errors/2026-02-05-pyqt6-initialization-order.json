@@ -1,0 +1,75 @@
+{
+  "errorReport": {
+    "id": "err-2026-02-05-pyqt6-init-order",
+    "timestamp": "2026-02-05T13:43:00Z",
+    "context": {
+      "task": "Test MSI-installed RecipeManager application",
+      "phase": "Post-installation runtime testing",
+      "project": "RecipeManager",
+      "files": ["src/views/main_window.py"]
+    },
+    "error": {
+      "message": "Failed to load meal plans: 'RecipeManagerWindow' object has no attribute 'status_bar'",
+      "type": "AttributeError",
+      "stack": "_load_meal_plans() -> _update_status() -> self.status_bar.showMessage()",
+      "severity": "high",
+      "impact": "Application launches but fails to load meal plan tab, displaying error dialog"
+    },
+    "rootCause": {
+      "whyChain": [
+        {
+          "question": "Why did loading meal plans fail?",
+          "answer": "Tried to access self.status_bar which didn't exist yet"
+        },
+        {
+          "question": "Why didn't status_bar exist?",
+          "answer": "status_bar was created AFTER _create_main_content() was called"
+        },
+        {
+          "question": "Why was that a problem?",
+          "answer": "_create_main_content() creates tabs, which call initialization methods"
+        },
+        {
+          "question": "Why do initialization methods need status_bar?",
+          "answer": "_load_meal_plans() calls _update_status() to show loading message"
+        },
+        {
+          "question": "Why was status_bar created after main content?",
+          "answer": "ROOT CAUSE: Initialization order didn't account for tab initialization dependencies"
+        }
+      ],
+      "rootCause": "Status bar created too late in __init__ sequence - tabs initialize before dependencies are ready",
+      "preventable": true
+    },
+    "category": {
+      "primary": "architectural",
+      "secondary": ["process"],
+      "tags": ["pyqt6", "initialization-order", "dependency-management", "gui", "lifecycle"]
+    },
+    "pattern": {
+      "type": "antipattern",
+      "name": "late-dependency-initialization",
+      "category": "gui",
+      "saved": ".corpus/learning/antipatterns/gui/late-dependency-initialization.md"
+    },
+    "fix": {
+      "implemented": true,
+      "approach": "Moved status_bar creation before _create_main_content() in __init__",
+      "code": "# Before:\n#  _create_menu_bar()\n#  _create_main_content()  # Creates tabs\n#  status_bar = QStatusBar()  # Too late!\n\n# After:\n#  _create_menu_bar()\n#  status_bar = QStatusBar()  # Create first\n#  _create_main_content()     # Tabs can now use status_bar",
+      "verification": "Application launches successfully, meal plans load without errors",
+      "timeToFix": "3 minutes"
+    },
+    "prevention": {
+      "rule": "In GUI __init__, create all shared dependencies BEFORE creating child widgets",
+      "implementation": "Order: 1) Shared resources (status bar, menus, etc.) 2) Main content 3) Connect signals 4) Load data",
+      "detection": "Runtime testing after build, automated GUI smoke test",
+      "pattern": "Dependency Initialization Pattern: Dependencies must be created before dependents"
+    },
+    "lessons": {
+      "general": "Initialization order matters when child components depend on parent resources",
+      "specific": "PyQt6 tabs initialize immediately when added to QTabWidget, triggering load methods",
+      "prevention": "Map out dependency graph before writing __init__ methods"
+    },
+    "relatedPatterns": ["dependency-injection", "initialization-order-pattern", "gui-lifecycle-management"]
+  }
+}

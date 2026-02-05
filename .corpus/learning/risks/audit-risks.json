@@ -1,0 +1,18 @@
+{
+  "code-quality": [
+    {
+      "risk": "Fixes break existing functionality",
+      "likelihood": 4,
+      "impact": 5,
+      "prevention": "Run tests after each fix, verify no new issues"
+    }
+  ],
+  "convergence": [
+    {
+      "risk": "GATE never converges (same issues reappear)",
+      "likelihood": 3,
+      "impact": 4,
+      "prevention": "Fix root cause, not symptoms. Use detect-infinite-loop."
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "errorReport": {
+    "id": "err-2026-02-05-pyinstaller-mf2py-data",
+    "timestamp": "2026-02-05T13:10:00Z",
+    "context": {
+      "task": "Fix PyInstaller build to include all dependencies",
+      "phase": "PyInstaller executable testing after pydantic_settings fix",
+      "project": "RecipeManager",
+      "files": ["RecipeManager.spec", "src/services/import_service.py"]
+    },
+    "error": {
+      "message": "FileNotFoundError: [WinError 3] The system cannot find the path specified: 'G:\\My Drive\\Projects\\RecipeManager\\dist\\RecipeManager\\_internal\\mf2py\\backcompat-rules'",
+      "type": "FileNotFoundError",
+      "stack": "File \"mf2py/backcompat.py\", line 47, in <module>",
+      "severity": "critical",
+      "impact": "Application fails to launch - recipe-scrapers dependency broken"
+    },
+    "rootCause": {
+      "whyChain": [
+        {
+          "question": "Why did the application fail to launch?",
+          "answer": "mf2py package could not find its backcompat-rules data directory"
+        },
+        {
+          "question": "Why couldn't it find backcompat-rules?",
+          "answer": "PyInstaller didn't bundle the mf2py data files"
+        },
+        {
+          "question": "Why didn't PyInstaller bundle the data files?",
+          "answer": "PyInstaller only auto-detects Python (.py) files, not data directories"
+        },
+        {
+          "question": "Why weren't data files explicitly included?",
+          "answer": "We didn't identify that recipe-scrapers -> extruct -> mf2py has data file dependencies"
+        },
+        {
+          "question": "Why didn't we identify this dependency chain?",
+          "answer": "ROOT CAUSE: No deep dependency analysis for packages with non-Python assets"
+        }
+      ],
+      "rootCause": "PyInstaller doesn't auto-detect non-Python data files in transitive dependencies",
+      "preventable": true
+    },
+    "category": {
+      "primary": "assumptions",
+      "secondary": ["technical", "external"],
+      "tags": ["pyinstaller", "data-files", "transitive-dependencies", "mf2py", "recipe-scrapers", "microformats"]
+    },
+    "pattern": {
+      "type": "antipattern",
+      "name": "assume-pyinstaller-finds-all-dependencies",
+      "category": "pyinstaller",
+      "saved": ".corpus/learning/antipatterns/pyinstaller/assume-pyinstaller-finds-all-dependencies.md"
+    },
+    "fix": {
+      "implemented": true,
+      "approach": "Added mf2py data directory to datas in RecipeManager.spec",
+      "code": "datas=[\n  ('src', 'src'),\n  ('data', 'data'),\n  (r'C:\\Users\\rondm\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\mf2py\\backcompat-rules', 'mf2py/backcompat-rules'),\n]",
+      "investigation": "1) Found mf2py location 2) Identified backcompat-rules directory 3) Added to PyInstaller datas",
+      "verification": "Tested executable launches and imports recipe-scrapers successfully",
+      "timeToFix": "10 minutes"
+    },
+    "prevention": {
+      "rule": "For each new dependency, check for non-Python data files (JSON, XML, templates, etc.)",
+      "implementation": "Before PyInstaller build: 1) List all site-packages dependencies 2) Check each for data dirs 3) Add to datas if found",
+      "detection": "Runtime test of built executable with import of all major dependencies",
+      "automation": "Create script to scan dependencies for data files and generate datas list"
+    },
+    "relatedPatterns": ["pyinstaller-data-file-inclusion", "dependency-deep-scan"]
+  }
+}

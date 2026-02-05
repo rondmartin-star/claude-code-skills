@@ -9,9 +9,10 @@ description: >
 # Windows Application Supervision Skill
 
 **Purpose:** Production-ready process supervision for Windows applications
-**Version:** 1.0
-**Size:** ~8 KB
+**Version:** 1.1
+**Size:** ~11 KB
 **Related Skills:** windows-app-build (deployment section)
+**Updated:** 2026-02-05 (Added MSI signing, installer UI enhancements)
 
 ---
 
@@ -289,6 +290,16 @@ Before deploying supervision:
 - [ ] SQLite WAL mode enabled
 - [ ] Required packages installed: `watchdog`, `httpx`
 
+Before building MSI installer:
+
+- [ ] Code signing certificate obtained (commercial CA recommended)
+- [ ] Certificate stored securely (not in git)
+- [ ] Environment variables set (CERT_PATH, CERT_PASSWORD)
+- [ ] SignTool available on build machine
+- [ ] WiX UI configured with launch option (checked by default)
+- [ ] Installer configured to stay on top during execution
+- [ ] Test installation on clean Windows machine
+
 ## Installation Commands
 
 ```batch
@@ -341,11 +352,27 @@ installer/
 ### Build MSI Manually
 
 ```batch
-REM Run build script
+REM Set signing credentials (if available)
+set CERT_PATH=C:\certificates\codesign.pfx
+set CERT_PASSWORD=your-certificate-password
+
+REM Run build script (includes signing if CERT_PATH exists)
 scripts\build-msi.bat
 
-REM Output: dist\ServiceDirector-X.Y.Z-YYDDD-HHMM.msi
+REM Output: dist\ServiceDirector-X.Y.Z-YYDDD-HHMM.msi (signed)
+
+REM Verify signature
+signtool verify /pa /v "dist\ServiceDirector-X.Y.Z-YYDDD-HHMM.msi"
 ```
+
+**Build Script Enhancement:**
+
+The `build-msi.bat` script should include:
+1. Compile WiX sources with candle.exe
+2. Link with light.exe to create MSI
+3. **Sign MSI with signtool** (if certificate available)
+4. Verify signature
+5. Copy to distribution folder
 
 ### Build MSI After Git Commit (Automated)
 
@@ -380,6 +407,161 @@ UpgradeCode="E8F7D6C5-B4A3-9281-7069-5E4D3C2B1A00"
 heat dir "python" -cg PythonComponents -dr PythonDir ...
 ```
 
+### Code Signing (Prevents Windows Defender Warnings)
+
+**Why Sign:** Unsigned installers trigger Windows SmartScreen warnings and may be blocked by Windows Defender.
+
+**Step 1: Obtain Code Signing Certificate**
+
+Options:
+- **Commercial CA:** DigiCert, Sectigo, GlobalSign (~$200-500/year)
+- **Self-Signed:** For internal distribution only (still shows warnings)
+
+**Step 2: Sign MSI with SignTool**
+
+```batch
+REM Sign the MSI installer
+signtool sign /f "certificate.pfx" /p "password" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "dist\ServiceDirector-X.Y.Z.msi"
+
+REM Verify signature
+signtool verify /pa /v "dist\ServiceDirector-X.Y.Z.msi"
+```
+
+**Step 3: Add Signing to Build Script**
+
+Add to `scripts\build-msi.bat` after MSI compilation:
+
+```batch
+@echo off
+REM ... (existing build steps)
+
+REM Sign the MSI
+if exist "%CERT_PATH%" (
+    echo Signing MSI installer...
+    signtool sign ^
+        /f "%CERT_PATH%" ^
+        /p "%CERT_PASSWORD%" ^
+        /fd SHA256 ^
+        /tr http://timestamp.digicert.com ^
+        /td SHA256 ^
+        /d "Service Director" ^
+        /du "https://your-website.com" ^
+        "dist\ServiceDirector-%VERSION%.msi"
+
+    if errorlevel 1 (
+        echo ERROR: Failed to sign MSI
+        exit /b 1
+    )
+    echo MSI signed successfully
+) else (
+    echo WARNING: Certificate not found at %CERT_PATH%, MSI not signed
+)
+```
+
+**Environment Variables for Signing:**
+
+```batch
+REM Set these in build environment
+set CERT_PATH=C:\certificates\codesign.pfx
+set CERT_PASSWORD=your-certificate-password
+```
+
+**Certificate Storage Best Practices:**
+- Store PFX file securely (encrypted folder)
+- Use environment variables for passwords
+- Never commit certificates to git
+- Use Azure Key Vault for CI/CD signing
+
+### Installer UI Enhancements
+
+**Keep Installer On Top + Launch Option**
+
+Add to WiX project file (`ServiceDirector.wxs`):
+
+```xml
+<Product ...>
+  <!-- Keep installer window on top -->
+  <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+  <Property Id="WixShellExecTarget" Value="[#MainExecutable]" />
+  <Property Id="INSTALLLEVEL" Value="1000" />
+
+  <!-- Launch option checkbox (checked by default) -->
+  <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+  <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+            Value="Launch Service Director after installation" />
+
+  <!-- Launch application on finish -->
+  <CustomAction Id="LaunchApplication"
+                BinaryKey="WixCA"
+                DllEntry="WixShellExec"
+                Impersonate="yes" />
+
+  <InstallExecuteSequence>
+    <Custom Action="LaunchApplication" After="InstallFinalize">
+      NOT Installed AND WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
+    </Custom>
+  </InstallExecuteSequence>
+
+  <!-- UI always on top -->
+  <UI>
+    <UIRef Id="WixUI_InstallDir" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <!-- Customize dialog to stay on top -->
+    <Publish Dialog="ExitDialog"
+             Control="Finish"
+             Event="DoAction"
+             Value="LaunchApplication">
+      WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
+    </Publish>
+  </UI>
+</Product>
+```
+
+**Alternative: Launch via Script**
+
+If launching via custom action is needed:
+
+```xml
+<CustomAction Id="LaunchApplicationScript"
+              ExeCommand="[INSTALLFOLDER]python\pythonw.exe -c &quot;import webbrowser; webbrowser.open('http://localhost:8004')&quot;"
+              Execute="immediate"
+              Impersonate="yes"
+              Return="asyncNoWait" />
+
+<InstallExecuteSequence>
+  <Custom Action="LaunchApplicationScript" After="InstallFinalize">
+    NOT Installed AND WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
+  </Custom>
+</InstallExecuteSequence>
+```
+
+**Keep Installer On Top (Additional Options):**
+
+For additional "always on top" behavior during installation:
+
+```xml
+<!-- Add to UI section -->
+<Property Id="DefaultUIFont" Value="DlgFont8" />
+<Property Id="WixUI_Mode" Value="InstallDir" />
+
+<!-- Ensure installer stays foreground -->
+<Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />
+<Property Id="ALLUSERS" Value="1" />
+
+<UI Id="CustomUI">
+  <UIRef Id="WixUI_InstallDir" />
+
+  <!-- Override welcome dialog -->
+  <DialogRef Id="WelcomeDlg" />
+  <DialogRef Id="InstallDirDlg" />
+  <DialogRef Id="VerifyReadyDlg" />
+
+  <!-- Keep on top by default with modal -->
+  <Property Id="WIXUI_EXITDIALOG_LAUNCH" Value="1" />
+</UI>
+```
+
 ### Custom Actions (Install/Uninstall)
 
 ```xml
@@ -408,7 +590,95 @@ msiexec /x ServiceDirector-5.2.0.msi /qn
 
 REM Repair
 msiexec /fa ServiceDirector-5.2.0.msi
+
+REM Verify code signature before installation (recommended)
+signtool verify /pa /v ServiceDirector-5.2.0.msi
 ```
+
+### MSI Best Practices Summary
+
+**Security:**
+- ✅ **Always sign MSI** with commercial certificate to avoid Windows Defender warnings
+- ✅ Use SHA256 for signing algorithm
+- ✅ Include timestamp server for long-term verification
+- ✅ Store certificates securely (Azure Key Vault, encrypted storage)
+
+**User Experience:**
+- ✅ **Keep installer on top** during execution for visibility
+- ✅ **Include launch option** on exit dialog, checked by default
+- ✅ Provide clear progress indicators
+- ✅ Show license agreement (license.rtf)
+
+**Deployment:**
+- ✅ Test on clean Windows machines
+- ✅ Verify signature with signtool before distribution
+- ✅ Use silent install for automated deployments
+- ✅ Enable logging for troubleshooting
+- ✅ Test upgrade path from previous versions
+
+---
+
+## MSI Installer Quick Reference
+
+**Three Critical Requirements:**
+
+### 1. Code Signing (Prevent Windows Defender Warnings)
+
+```batch
+REM Sign MSI with commercial certificate
+signtool sign /f certificate.pfx /p password /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 installer.msi
+```
+
+**Why:** Unsigned installers trigger SmartScreen and may be blocked by Windows Defender.
+
+**Certificate Sources:**
+- Commercial CA (recommended): DigiCert, Sectigo, GlobalSign
+- Cost: ~$200-500/year
+- Self-signed: For internal use only (still shows warnings)
+
+### 2. Keep Installer On Top During Execution
+
+```xml
+<!-- In ServiceDirector.wxs -->
+<UI>
+  <UIRef Id="WixUI_InstallDir" />
+  <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+  <Property Id="INSTALLLEVEL" Value="1000" />
+</UI>
+```
+
+**Why:** Ensures installer remains visible and accessible during installation process.
+
+### 3. Launch Option (Checked by Default)
+
+```xml
+<!-- In ServiceDirector.wxs -->
+<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+          Value="Launch Service Director after installation" />
+
+<CustomAction Id="LaunchApplication"
+              BinaryKey="WixCA"
+              DllEntry="WixShellExec"
+              Impersonate="yes" />
+
+<InstallExecuteSequence>
+  <Custom Action="LaunchApplication" After="InstallFinalize">
+    NOT Installed AND WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
+  </Custom>
+</InstallExecuteSequence>
+
+<Publish Dialog="ExitDialog"
+         Control="Finish"
+         Event="DoAction"
+         Value="LaunchApplication">
+  WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
+</Publish>
+```
+
+**Why:** Provides seamless user experience by launching application immediately after installation.
+
+**Default State:** Checkbox is checked by default (`Value="1"`), user can uncheck if desired.
 
 ---
 

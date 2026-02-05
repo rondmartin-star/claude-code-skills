@@ -1,0 +1,17 @@
+{
+  "id": "backup-before-conversion",
+  "name": "Backup Before Conversion",
+  "category": "corpus-operations",
+  "subcategory": "conversion",
+  "description": "Always create backup before converting existing project to corpus",
+  "solution": "Create timestamped backup in .corpus/backups/ before any conversion",
+  "applicability": "All corpus-convert operations",
+  "metrics": {
+    "applications": 0,
+    "successes": 0,
+    "failures": 0,
+    "successRate": 1.0
+  },
+  "tags": ["safety", "backup", "conversion"],
+  "relatedAntipatterns": ["no-backup-before-migration"]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "eslint-auto-fix",
+  "name": "ESLint Auto-Fix Pattern",
+  "category": "audit-operations",
+  "subcategory": "code-quality",
+  "description": "Automatically fix ESLint issues using eslint --fix",
+  "solution": "Run 'eslint --fix' on target files, verify tests still pass",
+  "applicability": "When ESLint issues are auto-fixable",
+  "metrics": {
+    "applications": 0,
+    "successes": 0,
+    "failures": 0,
+    "successRate": 0.0
+  },
+  "tags": ["eslint", "auto-fix", "code-quality"],
+  "relatedAntipatterns": ["manual-fix-auto-fixable"]
+}

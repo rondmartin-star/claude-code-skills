@@ -1,17 +1,18 @@
 ---
 name: publishing-orchestrator
 description: >
-  Coordinate content creation across platforms. Routes to content-creation-ecosystem
-  based on content type. Manages HTML-first workflow with multi-format export.
-  Load when: creating content for Bluesky, Substack, websites, blogs, or academic
-  publishing.
+  Coordinate content creation across platforms with learning-first architecture. Routes to
+  content-creation-ecosystem based on content type. Uses content-battle-plan for medium/complex
+  operations. Manages HTML-first workflow with multi-format export. Load when: creating content
+  for Bluesky, Substack, websites, blogs, or academic publishing.
 ---
 
 # Publishing Orchestrator
 
-**Purpose:** Route content creation requests to appropriate specialized skill
-**Size:** ~7KB (intentionally minimal)
-**Action:** Detect content type → Load content-creation-ecosystem → Route to reference
+**Purpose:** Route content creation with battle-plan integration
+**Size:** ~9KB
+**Action:** Detect content type → Assess complexity → Route with or without battle-plan
+**Learning Integration:** Uses content-battle-plan for medium/complex content operations
 
 ---
 
@@ -44,9 +45,97 @@ description: >
 
 ---
 
+## Complexity Assessment for Content Operations
+
+**Before routing, assess complexity to determine if battle-plan workflow is needed:**
+
+```javascript
+function assessContentComplexity(contentType, context) {
+  const complexityIndicators = {
+    trivial: [
+      context.informationOnly === true,  // Just asking what platforms we support
+      context.noCreation === true         // No actual content creation
+    ],
+    simple: [
+      contentType === 'social-media' && context.threadLength === 1,
+      context.wordCount < 300,
+      context.templateBased === true
+    ],
+    medium: [
+      contentType === 'newsletter' || contentType === 'blog',
+      contentType === 'social-media' && context.threadLength > 1,
+      context.wordCount >= 300 && context.wordCount < 2000,
+      context.multiFormat === true  // Needs HTML + PDF + DOCX
+    ],
+    complex: [
+      contentType === 'website' && context.pageCount > 1,
+      contentType === 'journal',
+      context.wordCount >= 2000,
+      context.citations === true,
+      context.requiresSEO === true,
+      context.multiPage === true
+    ]
+  };
+
+  // Check from complex → trivial
+  for (const level of ['complex', 'medium', 'simple', 'trivial']) {
+    const matches = complexityIndicators[level].filter(indicator => indicator === true);
+    if (matches.length > 0) {
+      return {
+        level,
+        useBattlePlan: (level === 'medium' || level === 'complex'),
+        confidence: matches.length / complexityIndicators[level].length
+      };
+    }
+  }
+
+  // Default to medium
+  return { level: 'medium', useBattlePlan: true, confidence: 0.5 };
+}
+```
+
+**Complexity Examples:**
+
+| Content Type | Complexity | Use Battle-Plan? | Reason |
+|--------------|------------|------------------|--------|
+| Single Bluesky post | Simple | No | Short, single post |
+| Bluesky thread (10 posts) | Medium | Yes | Multi-step planning |
+| Newsletter article | Medium | Yes | Long-form, structure |
+| Blog post with SEO | Medium | Yes | SEO validation, quality |
+| Multi-page website | Complex | Yes | Navigation, consistency |
+| Journal article | Complex | Yes | Citations, peer review quality |
+
+**Battle-Plan Integration:**
+```javascript
+async function routeContentWithComplexity(contentType, context) {
+  const complexity = assessContentComplexity(contentType, context);
+
+  if (!complexity.useBattlePlan) {
+    // Trivial or simple - execute directly
+    console.log(`${complexity.level} content - executing directly`);
+    return {
+      skill: 'content-creation-ecosystem',
+      contentType,
+      battlePlan: null
+    };
+  }
+
+  // Medium or complex - use content-battle-plan
+  console.log(`${complexity.level} content - using content-battle-plan`);
+  return {
+    skill: 'content-creation-ecosystem',
+    contentType,
+    battlePlan: 'content-battle-plan',
+    complexity: complexity.level
+  };
+}
+```
+
+---
+
 ## Routing Logic
 
-### Decision Matrix
+### Decision Matrix (Enhanced with Complexity Assessment)
 
 | User Says | Content Type | Load | Reference File |
 |-----------|--------------|------|----------------|
@@ -113,6 +202,116 @@ If ambiguous, ask:
 
 ---
 
+## Content Creation Examples
+
+### Example 1: Newsletter (Medium - Battle-Plan)
+
+```
+User: "Create a newsletter about OAuth learning skills for technical audience"
+
+Content Type Detection:
+  - Platform: newsletter (Substack)
+  - Keywords: "newsletter"
+  - Detected: Newsletter
+
+Complexity Assessment:
+  - Content type: newsletter
+  - Estimated length: ~800 words (medium)
+  - Audience: technical
+  - Level: MEDIUM (structured content, audience-specific)
+  - Use battle-plan: YES
+
+Routing:
+  → content-battle-plan → content-creation-ecosystem → newsletter.md
+
+═══ CONTENT BATTLE-PLAN ═══
+Complexity: medium
+Target: newsletter
+
+PHASE 1: CLARIFICATION
+  Q: Target audience? → Technical
+  Q: Length target? → Medium (500-1000 words)
+  Q: Primary goal? → Educate
+  ✓ Scope clarified
+
+PHASE 2: KNOWLEDGE CHECK (Pattern Library)
+  ✓ Found: newsletter-structure-technical (12 uses, 91% engagement)
+  ✓ Found: code-snippet-formatting (best practices)
+  ⚠️ Antipattern: missing-call-to-action (reduces engagement 40%)
+  Recommendation: Use technical newsletter pattern, include CTA
+
+PHASE 3: PRE-MORTEM (Content-Specific Risks)
+  Risk #1: Broken links (likelihood: 3, impact: 3)
+    Prevention: Validate all links before publishing
+  Risk #2: Code examples don't work (likelihood: 3, impact: 4)
+    Prevention: Test all code snippets
+  Recommendation: GO WITH CAUTION
+
+PHASE 5: EXECUTION
+  Applying pattern: newsletter-structure-technical
+
+  Creating content structure:
+    ✓ Compelling subject line
+    ✓ Opening hook (problem statement)
+    ✓ Main content (3 sections)
+    ✓ Code examples with syntax highlighting
+    ✓ Call-to-action
+    ✓ Unsubscribe link
+
+  [VERIFY-EVIDENCE checkpoints:]
+    ✓ Subject line: "Your AI has infinite knowledge and zero habits"
+    ✓ All links validated (3 external, 2 internal - all 200 OK)
+    ✓ Code examples tested (3 snippets - all runnable)
+    ✓ Images optimized (2 diagrams, 45KB total)
+    ✓ Call-to-action present
+    ✓ Preview text set
+
+PHASE 7: DECLARE COMPLETE
+  Requirements Met:
+    - Core: 6/6 (100%) ✓
+    - Subject, content, examples, CTA, links, unsubscribe
+  Status: ✓ SHIPPABLE
+
+PHASE 8: PATTERN UPDATE
+  Updated pattern: newsletter-structure-technical
+    Applications: 13 (was 12)
+    Avg engagement: 92% (was 91%)
+
+  New pattern captured:
+    - oauth-learning-explanation (novel way to explain concept)
+```
+
+### Example 2: Single Bluesky Post (Simple - No Battle-Plan)
+
+```
+User: "Write a short post about Claude Code for Bluesky"
+
+Content Type Detection:
+  - Platform: social media (Bluesky)
+  - Keywords: "Bluesky", "post"
+  - Detected: Social media
+
+Complexity Assessment:
+  - Content type: social-media
+  - Length: single post (<300 chars)
+  - Level: SIMPLE (short, single post)
+  - Use battle-plan: NO
+
+Routing:
+  → content-creation-ecosystem → social-media.md (direct)
+
+Execution:
+  - Load content-creation-ecosystem
+  - Load social-media.md reference
+  - Create short post
+  - Validate character limit
+  - Done
+
+[No battle-plan overhead - fast execution for simple content]
+```
+
+---
+
 ## Integration with content-creation-ecosystem
 
 ### HTML-First Design
@@ -123,30 +322,58 @@ This orchestrator is a thin router. The heavy lifting happens in content-creatio
 - **Interactive controls:** View/Print/PDF/Edit buttons in HTML
 - **Validation:** Platform-specific checks
 
-### Workflow
+### Workflow (Enhanced with Battle-Plan)
 
 ```
 User Request
      │
      ▼
-Publishing Orchestrator (detects content type)
-     │
-     ▼
-content-creation-ecosystem/SKILL.md (loads)
-     │
-     ├─→ routes to social-media.md (for Bluesky posts)
-     ├─→ routes to newsletter.md (for Substack articles)
-     ├─→ routes to website.md (for multi-page sites)
-     ├─→ routes to blog.md (for blog posts)
-     ├─→ routes to reference-material.md (for documentation)
-     └─→ routes to journal-article.md (for academic papers)
-     │
-     ▼
-Create HTML content
-     │
-     ├─→ Optional: Export to PDF (via convert_to_pdf.py)
-     ├─→ Optional: Export to DOCX (via convert_to_docx.py)
-     └─→ Optional: Bundle multi-file (via bundle_content.py)
+Publishing Orchestrator
+     ├─ Detects content type
+     └─ Assesses complexity
+          │
+          ├─ Trivial/Simple → Direct execution
+          │     │
+          │     ▼
+          │  content-creation-ecosystem/SKILL.md (loads)
+          │     │
+          │     ▼
+          │  Create content (fast path)
+          │
+          └─ Medium/Complex → Battle-Plan workflow
+                │
+                ▼
+             content-battle-plan
+                │
+                ├─ PHASE 1: Clarification (target audience, length, goal)
+                ├─ PHASE 2: Pattern check (newsletter-structure, blog-seo)
+                ├─ PHASE 3: Pre-mortem (broken links, no CTA, SEO issues)
+                ├─ PHASE 4: Confirmation (get user approval)
+                ├─ PHASE 5: Execute
+                │     │
+                │     ▼
+                │  content-creation-ecosystem/SKILL.md
+                │     │
+                │     ├─→ routes to social-media.md
+                │     ├─→ routes to newsletter.md
+                │     ├─→ routes to website.md
+                │     ├─→ routes to blog.md
+                │     ├─→ routes to reference-material.md
+                │     └─→ routes to journal-article.md
+                │     │
+                │     ▼
+                │  Create HTML content
+                │     │
+                │     ├─ [VERIFY-EVIDENCE: Links valid ✓]
+                │     ├─ [VERIFY-EVIDENCE: Images have alt text ✓]
+                │     ├─ [VERIFY-EVIDENCE: SEO metadata present ✓]
+                │     │
+                │     ├─→ Optional: Export to PDF
+                │     ├─→ Optional: Export to DOCX
+                │     └─→ Optional: Bundle multi-file
+                │
+                ├─ PHASE 7: Declare complete (block perfectionism)
+                └─ PHASE 8: Pattern update (save learnings)
 ```
 
 ---
@@ -356,4 +583,51 @@ What platform is this for?
 
 ---
 
+## Configuration
+
+**Battle-Plan Integration Settings:**
+
+```json
+{
+  "publishingOrchestrator": {
+    "battlePlan": {
+      "enabled": true,
+      "variant": "content-battle-plan",
+      "complexityThresholds": {
+        "social-media": {
+          "singlePost": "simple",
+          "thread": "medium"
+        },
+        "newsletter": "medium",
+        "blog": "medium",
+        "website": "complex",
+        "journal": "complex",
+        "reference": "medium"
+      },
+      "autoAssessComplexity": true,
+      "alwaysUseForWebsite": true,
+      "alwaysUseForJournal": true
+    },
+    "contentValidation": {
+      "validateLinks": true,
+      "checkImages": true,
+      "verifySEO": true,
+      "testCodeExamples": true
+    }
+  }
+}
+```
+
+**Override complexity for specific content:**
+```javascript
+await publishContent('newsletter', {
+  forceComplexity: 'simple',  // Skip battle-plan for quick draft
+  skipValidation: false
+});
+```
+
+---
+
 *End of Publishing Orchestrator*
+*Learning Integration: Uses content-battle-plan for medium/complex content operations*
+*Ensures quality through pattern library and pre-mortem risk assessment*

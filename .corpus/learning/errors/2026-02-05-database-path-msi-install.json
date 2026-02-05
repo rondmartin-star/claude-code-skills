@@ -1,0 +1,76 @@
+{
+  "errorReport": {
+    "id": "err-2026-02-05-database-path-msi",
+    "timestamp": "2026-02-05T14:15:00Z",
+    "context": {
+      "task": "Test RecipeManager MSI installer",
+      "phase": "Post-installation runtime testing",
+      "project": "RecipeManager",
+      "files": ["src/config.py", "src/services/image_service.py"]
+    },
+    "error": {
+      "message": "Failed to execute script 'main' due to unhandled exception: (sqlite3.OperationalError) unable to open database file",
+      "type": "sqlite3.OperationalError",
+      "stack": "File 'sqlalchemy\\engine\\base.py', line 3293, in _raw_connection\nFile 'sqlalchemy\\pool\\base.py', line 452, in connect\nFile 'sqlalchemy\\pool\\impl.py', line 1146, in __get__\nFile 'sqlalchemy\\pool\\impl.py', line 480, in do_get\nFile 'sqlalchemy\\pool\\base.py', line 902, in __connect",
+      "severity": "critical",
+      "impact": "Application completely unusable after MSI installation"
+    },
+    "rootCause": {
+      "whyChain": [
+        {
+          "question": "Why couldn't the application open the database file?",
+          "answer": "Database path './data/recipes.db' doesn't exist and can't be created"
+        },
+        {
+          "question": "Why doesn't the path exist?",
+          "answer": "Application is installed in C:\\Program Files\\RecipeManager\\ which requires admin permissions"
+        },
+        {
+          "question": "Why is it trying to write to Program Files?",
+          "answer": "Database path was configured as relative path './data/recipes.db'"
+        },
+        {
+          "question": "Why use a relative path?",
+          "answer": "Config was written for development where current directory = project root"
+        },
+        {
+          "question": "Why didn't we detect this before MSI distribution?",
+          "answer": "ROOT CAUSE: No testing of installed application behavior - only tested portable executable from dist/"
+        }
+      ],
+      "rootCause": "Relative paths work in development but fail when installed in protected directories like Program Files",
+      "preventable": true
+    },
+    "category": {
+      "primary": "architectural",
+      "secondary": ["assumptions", "process"],
+      "tags": ["database", "file-paths", "msi-installer", "appdata", "windows", "permissions"]
+    },
+    "pattern": {
+      "type": "antipattern",
+      "name": "hardcoded-relative-paths-in-installed-apps",
+      "category": "windows-deployment",
+      "saved": ".corpus/learning/antipatterns/windows-deployment/hardcoded-relative-paths.md"
+    },
+    "fix": {
+      "implemented": true,
+      "approach": "Use environment-aware path resolution",
+      "code": "def get_default_data_dir() -> Path:\n    if getattr(sys, 'frozen', False):\n        # Installed: Use AppData\n        appdata = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))\n        data_dir = Path(appdata) / 'RecipeManager'\n    else:\n        # Development: Use ./data\n        data_dir = Path('./data')\n    data_dir.mkdir(parents=True, exist_ok=True)\n    return data_dir",
+      "verification": "Tested MSI install - app launches and creates database in AppData successfully",
+      "timeToFix": "15 minutes"
+    },
+    "prevention": {
+      "rule": "Never use relative paths for user data in installed applications",
+      "implementation": "Always use platform-appropriate data directories: AppData (Windows), ~/Library/Application Support (macOS), ~/.config (Linux)",
+      "validation": "Test actual MSI installation, not just portable executable",
+      "detection": "Automated test: Install MSI in VM, launch app, verify database creation"
+    },
+    "lessons": {
+      "general": "Installed applications need different path strategies than development scripts",
+      "specific": "Program Files is read-only for standard users - user data must go elsewhere",
+      "windows": "Use %LOCALAPPDATA% for per-user application data",
+      "testing": "Always test the actual installation method, not just the portable version"
+    },
+    "relatedPatterns": ["appdata-pattern", "platform-aware-paths", "sys-frozen-detection"]
+  }
+}

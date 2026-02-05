@@ -1,0 +1,16 @@
+{
+  "category": "general",
+  "subcategory": "seeded",
+  "description": "Antipatterns extracted from existing ERROR-AND-FIXES-LOG.md files",
+  "antipatterns": [
+    {
+      "id": "manual-review-required",
+      "name": "Manual Review Required",
+      "problem": "ERROR-AND-FIXES-LOG.md files exist but require manual review to extract patterns",
+      "prevention": "Review existing ERROR-AND-FIXES-LOG.md files and extract antipatterns manually",
+      "occurrences": 0,
+      "tags": ["meta", "manual-review"],
+      "sources": []
+    }
+  ]
+}

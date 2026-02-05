@@ -1,0 +1,68 @@
+{
+  "errorReport": {
+    "id": "err-2026-02-05-pyinstaller-pydantic-settings",
+    "timestamp": "2026-02-05T13:00:00Z",
+    "context": {
+      "task": "Build RecipeManager v2.0 MSI installer",
+      "phase": "PyInstaller executable build and testing",
+      "project": "RecipeManager",
+      "files": ["RecipeManager.spec", "src/config.py"]
+    },
+    "error": {
+      "message": "ModuleNotFoundError: No module named 'pydantic_settings'",
+      "type": "ModuleNotFoundError",
+      "stack": "File \"src/config.py\", line 7: from pydantic_settings import BaseSettings",
+      "severity": "critical",
+      "impact": "Application fails to launch after installation"
+    },
+    "rootCause": {
+      "whyChain": [
+        {
+          "question": "Why did the application fail to launch?",
+          "answer": "pydantic_settings module was not found at runtime"
+        },
+        {
+          "question": "Why was pydantic_settings not found?",
+          "answer": "PyInstaller didn't bundle the pydantic_settings package"
+        },
+        {
+          "question": "Why didn't PyInstaller bundle pydantic_settings?",
+          "answer": "pydantic_settings is not auto-detected by PyInstaller's dependency scanner"
+        },
+        {
+          "question": "Why wasn't it explicitly included in hiddenimports?",
+          "answer": "We didn't identify pydantic_settings as a hidden import during spec file creation"
+        },
+        {
+          "question": "Why didn't we identify it?",
+          "answer": "ROOT CAUSE: No test of the built executable before creating MSI installer"
+        }
+      ],
+      "rootCause": "Skipped portable executable testing before MSI creation",
+      "preventable": true
+    },
+    "category": {
+      "primary": "process",
+      "secondary": ["technical", "assumptions"],
+      "tags": ["pyinstaller", "hidden-imports", "pydantic", "dependency-detection", "testing"]
+    },
+    "pattern": {
+      "type": "antipattern",
+      "name": "skip-executable-testing-before-packaging",
+      "category": "pyinstaller",
+      "saved": ".corpus/learning/antipatterns/pyinstaller/skip-executable-testing-before-packaging.md"
+    },
+    "fix": {
+      "implemented": true,
+      "approach": "Added pydantic_settings and pydantic_core to hiddenimports in RecipeManager.spec",
+      "code": "hiddenimports=[\n  'pydantic',\n  'pydantic_settings',  # Added\n  'pydantic_core',      # Added\n  ...\n]",
+      "verification": "Tested portable executable launches successfully",
+      "timeToFix": "5 minutes"
+    },
+    "prevention": {
+      "rule": "Always test PyInstaller executable before creating installer packages",
+      "implementation": "Add build script step: 1) Build executable 2) Test executable 3) Create installer",
+      "validation": "Automated test in build pipeline"
+    }
+  }
+}

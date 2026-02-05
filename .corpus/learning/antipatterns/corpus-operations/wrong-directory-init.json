@@ -1,0 +1,15 @@
+{
+  "id": "wrong-directory-init",
+  "name": "Initialize in Wrong Directory",
+  "category": "corpus-operations",
+  "problem": "Initializing corpus in wrong directory leads to confusion and wasted setup",
+  "examples": [
+    "Running corpus-init in parent directory instead of project root",
+    "Initializing in temporary directory",
+    "Not verifying pwd before initialization"
+  ],
+  "prevention": "Always show full path and require user confirmation before initialization",
+  "occurrences": 0,
+  "tags": ["initialization", "user-error"],
+  "severity": "medium"
+}
