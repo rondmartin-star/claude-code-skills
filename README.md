@@ -1,10 +1,11 @@
 # Claude Code Skills Ecosystem
 
-Comprehensive skill library for Windows application development and content creation.
+Comprehensive skill library for Windows application development, content creation, and learning integration.
 
-**Version:** 2.0
-**Last Updated:** 2026-01-27
-**Total Skills:** 15 (13 original + 2 new orchestrators)
+**Version:** 3.0
+**Last Updated:** 2026-02-05
+**Total Skills:** 28 (15 from v2.0 + 13 learning skills)
+**Major Update:** Learning integration with multi-methodology convergence
 
 ---
 
@@ -98,6 +99,55 @@ Multi-platform content creation with HTML-first workflow.
 |-------|------|---------|
 | **publishing-orchestrator** | ~7KB | Route by content type (social, newsletter, blog, journal) |
 | **content-creation-ecosystem** | ~14KB + refs | HTML-first with DOCX/PPTX/PDF export |
+
+### Learning Skills (NEW in v3.0) ⭐
+
+Compound learning and institutional memory for continuous improvement.
+
+**Core Pattern:**
+| Skill | Size | Purpose |
+|-------|------|---------|
+| **multi-methodology-convergence** | ~25KB | Generic convergence with 8 orthogonal methodologies, random selection |
+| **iterative-phase-review** | ~17KB | Phase review wrapper for task deliverables |
+| **convergence-engine** | ~3KB | Backward compatibility forwarding file (DEPRECATED) |
+
+**Pre-Execution:**
+| Skill | Size | Purpose |
+|-------|------|---------|
+| **clarify-requirements** | ~8KB | Force plain language, identify assumptions, generate questions |
+| **pre-mortem** | ~10KB | Anticipate failures before they happen (risk assessment) |
+| **confirm-operation** | ~7KB | Get user approval before executing |
+
+**During-Execution:**
+| Skill | Size | Purpose |
+|-------|------|---------|
+| **verify-evidence** | ~6KB | Checkpoint validation at critical moments |
+| **detect-infinite-loop** | ~7KB | Pivot after 3 consecutive failures |
+| **manage-context** | ~8KB | Context usage monitoring and chunking |
+
+**Post-Execution:**
+| Skill | Size | Purpose |
+|-------|------|---------|
+| **error-reflection** | ~9KB | 5 Whys analysis on failures |
+| **declare-complete** | ~8KB | Shippability assessment, block perfectionism |
+| **pattern-library** | ~10KB | Store antipatterns and proven solutions |
+
+**Battle-Plan Orchestrators:**
+| Skill | Size | Purpose |
+|-------|------|---------|
+| **battle-plan** | ~26KB | Generic learning-first workflow (9 phases with Phase 5.5) |
+| **audit-battle-plan** | ~15KB | Code quality with learning integration |
+| **content-battle-plan** | ~14KB | Content creation with learning |
+| **corpus-battle-plan** | ~13KB | Corpus management with learning |
+
+**Key Features:**
+- **Multi-methodology convergence:** 8 orthogonal review approaches
+- **Random selection:** No reuse in clean sequences (prevents pattern blindness)
+- **Context clearing:** Fresh perspective on each pass
+- **Convergence:** 3 consecutive clean passes required
+- **Compound learning:** Pattern library grows with each task
+- **Battle-Plan Phase 5.5:** Quality gate on task deliverables
+- **Windows-App Gates:** 5 phase review gates at development transitions
 
 ---
 
