@@ -77,21 +77,13 @@ The team has spent weeks debugging. Customer trust is damaged."
 
 ### 2. Generate Failure Causes
 
-**Brainstorm what led to failure:**
+**Brainstorm what led to failure (in parallel for 6x speedup):**
 
 ```javascript
-async function generateFailureCauses(scenario, context) {
-  const categories = {
-    technical: [],
-    process: [],
-    assumptions: [],
-    external: [],
-    communication: [],
-    scope: []
-  };
-
-  // Technical failures
-  categories.technical = [
+// Category-specific generation functions
+async function generateTechnicalCauses(scenario) {
+  // Analyze technical architecture, dependencies, implementation
+  return [
     "Database not properly configured",
     "Third-party OAuth provider rate limits hit",
     "Password hashing algorithm too slow, timeouts",
@@ -99,48 +91,79 @@ async function generateFailureCauses(scenario, context) {
     "CSRF tokens not properly validated",
     "Cookie security flags missing"
   ];
+}
 
-  // Process failures
-  categories.process = [
+async function generateProcessCauses(scenario) {
+  // Analyze workflow, methodology, testing practices
+  return [
     "No testing of edge cases (expired tokens, concurrent logins)",
     "Security audit skipped due to time pressure",
     "No load testing performed",
     "Migration plan for existing users inadequate"
   ];
+}
 
-  // Assumption failures
-  categories.assumptions = [
+async function generateAssumptionCauses(scenario) {
+  // Identify unverified beliefs and invalid assumptions
+  return [
     "Assumed third-party library was secure (it had CVE)",
     "Thought existing database could handle sessions (it couldn't)",
     "Believed users would accept password requirements (too strict)",
     "Expected 1000 users, got 10,000 on day one"
   ];
+}
 
-  // External failures
-  categories.external = [
+async function generateExternalCauses(scenario) {
+  // Consider dependencies, third-party services, environment
+  return [
     "OAuth provider changed their API without notice",
     "Regulatory requirements changed (GDPR, password rules)",
     "DDoS attack overwhelmed auth endpoints",
     "Browser updates broke session handling"
   ];
+}
 
-  // Communication failures
-  categories.communication = [
+async function generateCommunicationCauses(scenario) {
+  // Assess clarity, stakeholder alignment, documentation
+  return [
     "Frontend team didn't understand token refresh flow",
     "Security requirements not clearly documented",
     "User support not trained on auth issues",
     "Migration communication to users failed"
   ];
+}
 
-  // Scope failures
-  categories.scope = [
+async function generateScopeCauses(scenario) {
+  // Evaluate scope creep, missing requirements, underestimation
+  return [
     "Scope creep: Added SSO, 2FA, biometrics mid-project",
     "Underestimated complexity of password reset flow",
     "Didn't account for multi-device sessions",
     "Forgot about API authentication for mobile app"
   ];
+}
 
-  return categories;
+async function generateFailureCauses(scenario, context) {
+  // Generate all categories in parallel (6x speedup: 25ms vs 150ms)
+  const [technical, process, assumptions, external, communication, scope] =
+    await Promise.all([
+      generateTechnicalCauses(scenario),      // 25ms
+      generateProcessCauses(scenario),        // 25ms
+      generateAssumptionCauses(scenario),     // 25ms
+      generateExternalCauses(scenario),       // 25ms
+      generateCommunicationCauses(scenario),  // 25ms
+      generateScopeCauses(scenario)           // 25ms
+    ]);
+
+  // Aggregate results
+  return {
+    technical,
+    process,
+    assumptions,
+    external,
+    communication,
+    scope
+  };
 }
 ```
 

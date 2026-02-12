@@ -418,8 +418,8 @@ async function executeConvergence(config) {
         console.log('✓ Backup created before fixes');
       }
 
-      // Fix issues with parallel execution and conflict detection
-      const fixResults = await fixIssuesInParallel(
+      // Fix issues with detect-infinite-loop integration
+      const fixResults = await fixIssuesWithLoopDetection(
         result.issues,
         config.fix.executor,
         state.loopDetector
@@ -427,9 +427,6 @@ async function executeConvergence(config) {
 
       state.totalIssuesFixed += fixResults.fixed;
       console.log(`✓ Fixed ${fixResults.fixed} issues`);
-      console.log(`  Parallel fixes: ${fixResults.parallelFixes}`);
-      console.log(`  Sequential fixes: ${fixResults.sequentialFixes}`);
-      console.log(`  Conflicts detected: ${fixResults.conflicts}`);
 
       if (fixResults.loopsDetected > 0) {
         console.log(`⚠️ ${fixResults.loopsDetected} infinite loops detected and pivoted`);
@@ -524,169 +521,6 @@ async function fixIssuesWithLoopDetection(issues, fixExecutor, loopDetector) {
 
 function getFixSignature(issue) {
   return `${issue.file || 'unknown'}:${issue.line || 0}:${issue.type || 'unknown'}`;
-}
-
-/**
- * Fix issues in parallel with conflict detection
- * When multiple methodologies flag issues in the same file, this function:
- * 1. Groups issues by file
- * 2. Runs parallel fixes for independent files (no conflicts)
- * 3. Runs sequential fixes for conflicting files (preserves line order)
- * 4. Integrates with detect-infinite-loop for all fixes
- */
-async function fixIssuesInParallel(issues, fixExecutor, loopDetector) {
-  console.log(`\n→ Analyzing ${issues.length} issues for conflicts...`);
-
-  // Group issues by file
-  const byFile = issues.reduce((groups, issue) => {
-    const file = issue.file || 'unknown';
-    if (!groups[file]) {
-      groups[file] = [];
-    }
-    groups[file].push(issue);
-    return groups;
-  }, {});
-
-  // Separate independent vs conflicting files
-  const independent = Object.entries(byFile).filter(([_, fileIssues]) => fileIssues.length === 1);
-  const conflicting = Object.entries(byFile).filter(([_, fileIssues]) => fileIssues.length > 1);
-
-  console.log(`  Independent files: ${independent.length}`);
-  console.log(`  Conflicting files: ${conflicting.length}`);
-
-  let fixed = 0;
-  let loopsDetected = 0;
-  let parallelFixes = 0;
-  let sequentialFixes = 0;
-
-  // Phase 1: Parallel fixes for independent files
-  if (independent.length > 0) {
-    console.log(`\n→ Phase 1: Parallel fixes (${independent.length} files)...`);
-
-    const parallelResults = await Promise.all(
-      independent.map(async ([file, [issue]]) => {
-        // detect-infinite-loop integration: Track fix attempts
-        const fixSignature = getFixSignature(issue);
-        loopDetector.record_attempt(fixSignature);
-
-        if (loopDetector.is_stuck(fixSignature)) {
-          console.log(`⚠️ INFINITE LOOP DETECTED: ${issue.description}`);
-          console.log(`   Attempted ${loopDetector.count(fixSignature)} times`);
-
-          // Generate alternatives
-          const alternatives = await detect_infinite_loop.generate_alternatives({
-            failed_approach: issue,
-            attempts: loopDetector.count(fixSignature)
-          });
-
-          console.log(`   Pivoting to alternative approach...`);
-          issue.alternative = alternatives[0];
-          return { fixed: 0, loopDetected: true };
-        }
-
-        // Apply fix
-        const fixResult = await fixExecutor([issue]);
-
-        // verify-evidence: Confirm fix applied
-        const fixVerified = await verify_evidence.check({
-          claim: `Fix applied for: ${issue.description}`,
-          evidence: [
-            "No errors during application",
-            "Target modified",
-            "Tests still passing"
-          ]
-        });
-
-        if (fixVerified.verified) {
-          return { fixed: fixResult.fixed || 0, loopDetected: false };
-        } else {
-          console.log(`⚠️ Fix verification failed: ${issue.description}`);
-          return { fixed: 0, loopDetected: false };
-        }
-      })
-    );
-
-    // Aggregate parallel results
-    parallelResults.forEach(result => {
-      fixed += result.fixed;
-      parallelFixes += result.fixed;
-      if (result.loopDetected) loopsDetected++;
-    });
-
-    console.log(`  ✓ Parallel phase complete: ${parallelFixes} fixes`);
-  }
-
-  // Phase 2: Sequential fixes for conflicting files (preserve line order)
-  if (conflicting.length > 0) {
-    console.log(`\n→ Phase 2: Sequential fixes (${conflicting.length} files with conflicts)...`);
-
-    for (const [file, fileIssues] of conflicting) {
-      console.log(`  File: ${file} (${fileIssues.length} issues)`);
-
-      // Sort by line number (bottom-up to preserve line numbers)
-      const sorted = fileIssues.sort((a, b) => (b.line || 0) - (a.line || 0));
-
-      for (const issue of sorted) {
-        // detect-infinite-loop integration: Track fix attempts
-        const fixSignature = getFixSignature(issue);
-        loopDetector.record_attempt(fixSignature);
-
-        if (loopDetector.is_stuck(fixSignature)) {
-          console.log(`    ⚠️ INFINITE LOOP DETECTED: ${issue.description}`);
-          console.log(`       Attempted ${loopDetector.count(fixSignature)} times`);
-
-          // Generate alternatives
-          const alternatives = await detect_infinite_loop.generate_alternatives({
-            failed_approach: issue,
-            attempts: loopDetector.count(fixSignature)
-          });
-
-          console.log(`       Pivoting to alternative approach...`);
-          issue.alternative = alternatives[0];
-          loopsDetected++;
-          continue;
-        }
-
-        // Apply fix (may be alternative if loop detected)
-        const fixResult = await fixExecutor([issue]);
-
-        // verify-evidence: Confirm fix applied
-        const fixVerified = await verify_evidence.check({
-          claim: `Fix applied for: ${issue.description}`,
-          evidence: [
-            "No errors during application",
-            "Target modified",
-            "Tests still passing"
-          ]
-        });
-
-        if (fixVerified.verified) {
-          fixed += fixResult.fixed || 0;
-          sequentialFixes += fixResult.fixed || 0;
-          console.log(`    ✓ Fixed: ${issue.description}`);
-        } else {
-          console.log(`    ⚠️ Fix verification failed: ${issue.description}`);
-        }
-      }
-    }
-
-    console.log(`  ✓ Sequential phase complete: ${sequentialFixes} fixes`);
-  }
-
-  console.log(`\n✓ Fix execution complete`);
-  console.log(`  Total fixed: ${fixed}`);
-  console.log(`  Parallel: ${parallelFixes}`);
-  console.log(`  Sequential: ${sequentialFixes}`);
-  console.log(`  Conflicts: ${conflicting.length} files`);
-  console.log(`  Loops detected: ${loopsDetected}`);
-
-  return {
-    fixed,
-    loopsDetected,
-    parallelFixes,
-    sequentialFixes,
-    conflicts: conflicting.length
-  };
 }
 ```
 
