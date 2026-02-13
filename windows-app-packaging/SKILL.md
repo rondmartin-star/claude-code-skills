@@ -357,7 +357,31 @@ pause
 
 ## PowerShell Configuration Wizard Validation Patterns
 
-These 10 patterns prevent **90% of post-deployment failures** by validating early and failing fast with diagnostics.
+These 11 patterns prevent **90% of post-deployment failures** by validating early and failing fast with diagnostics.
+
+### Pattern 0: Pip Self-Upgrade (Windows File Locking) ⚠️ CRITICAL
+
+**Problem:** `pip.exe install --upgrade pip` fails on Windows with "ERROR: To modify pip, please run the following command..."
+
+**Root Cause:** Windows prevents modifying executables while they're running. When pip.exe tries to upgrade itself, it's locked by the current process.
+
+**Solution:**
+```powershell
+# WRONG - pip.exe can't upgrade itself
+& "venv\Scripts\pip.exe" install --upgrade pip setuptools wheel
+
+# RIGHT - Use python -m pip (launches new process)
+& "venv\Scripts\python.exe" -m pip install --upgrade pip setuptools wheel
+```
+
+**Why This Works:**
+- `python -m pip` launches a new Python process
+- The new process loads pip as a module (not pip.exe)
+- pip can now upgrade pip.exe because it's not the currently running file
+
+**Impact:** Prevents cryptic pip upgrade failures on Windows installations.
+
+---
 
 ### Pattern 1: Python Version Validation ⚠️ CRITICAL
 
