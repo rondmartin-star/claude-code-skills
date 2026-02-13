@@ -87,8 +87,9 @@ skills/
 │   │           ├── parallel-executor.md      # Sub-agent patterns (v4.1)
 │   │           └── fix-coordinator.md        # Conflict detection (v4.1)
 │   │
-│   ├── development/                 # Development Tools (2 skills)
+│   ├── development/                 # Development Tools (3 skills)
 │   │   ├── windows-app/             # Windows app lifecycle (WIP)
+│   │   ├── windows-app-packaging/   # MSI installer creation
 │   │   └── security/                # Security patterns (WIP)
 │   │
 │   ├── publishing/                  # Publishing (2 skills)
