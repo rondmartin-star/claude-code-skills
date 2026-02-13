@@ -508,6 +508,203 @@ Get-Content .env  # Verify SECRET_KEY, etc.
 
 ---
 
+### Database migrations fail silently
+
+**Symptom:** Application starts but shows no data or errors about missing tables
+
+**Cause:** Django migrations not applied during setup
+
+**Solution:**
+```powershell
+# In post-install wizard
+Write-Host "[5/8] Running database migrations..." -ForegroundColor Cyan
+$migrateOutput = & "venv\Scripts\python.exe" manage.py migrate 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Failure "Database migration failed"
+    $migrateOutput | Write-Host
+    exit 1
+}
+```
+
+---
+
+## Post-Deployment Issues
+
+### Issue 13: 32-bit vs 64-bit PowerShell $env:ProgramFiles Mismatch
+
+**Symptom:** Wizard fails with "Installation directory not found: C:\Program Files (x86)\Operations Hub" when MSI installed to "C:\Program Files\Operations Hub"
+
+**Root Cause:**
+- MSI installs to 64-bit Program Files
+- CONFIGURE.bat may launch 32-bit PowerShell
+- `$env:ProgramFiles` on 32-bit = `C:\Program Files (x86)`
+- `$env:ProgramW6432` = `C:\Program Files` (64-bit location)
+
+**Wrong Approach:**
+```powershell
+# Wizard default path
+param([string]$InstallPath = "$env:ProgramFiles\Operations Hub")
+# On 32-bit PowerShell: C:\Program Files (x86)\Operations Hub ❌
+# On 64-bit PowerShell: C:\Program Files\Operations Hub ✓
+```
+
+**Solution 1: Pass explicit path from batch file**
+```batch
+REM CONFIGURE.bat - Strip trailing backslash then pass path
+set "INSTALL_DIR=%~dp0"
+if "%INSTALL_DIR:~-1%"=="\" set "INSTALL_DIR=%INSTALL_DIR:~0,-1%"
+powershell -File scripts\wizard.ps1 -InstallPath "%INSTALL_DIR%"
+```
+
+**Solution 2: Force 64-bit PowerShell**
+```batch
+%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -File ...
+```
+
+**Prevention:** Always pass installation path explicitly from MSI environment, never rely on environment variables in PowerShell
+
+**Time Lost:** 30 minutes
+**Impact:** Critical - Blocks entire configuration wizard on 32-bit PowerShell
+
+---
+
+### Issue 14: Quote Escaping with %~dp0 Trailing Backslash
+
+**Symptom:** PowerShell error: "Illegal characters in path" - path contains literal quote character
+
+**Root Cause:**
+- `%~dp0` always ends with backslash: `C:\Program Files\Operations Hub\`
+- When used in quotes: `"%~dp0"`
+- Backslash escapes the closing quote: `"C:\Program Files\Operations Hub\"`
+- PowerShell receives: `C:\Program Files\Operations Hub"` (quote becomes part of string)
+
+**Wrong Approach:**
+```batch
+REM Backslash escapes the quote!
+powershell -File wizard.ps1 -InstallPath "%~dp0"
+REM PowerShell sees: -InstallPath "C:\Program Files\Operations Hub\"
+REM Which becomes: C:\Program Files\Operations Hub" (malformed)
+```
+
+**Correct Solution:**
+```batch
+REM Strip trailing backslash before passing to PowerShell
+set "INSTALL_DIR=%~dp0"
+if "%INSTALL_DIR:~-1%"=="\" set "INSTALL_DIR=%INSTALL_DIR:~0,-1%"
+powershell -File wizard.ps1 -InstallPath "%INSTALL_DIR%"
+REM PowerShell sees: -InstallPath "C:\Program Files\Operations Hub" ✓
+```
+
+**Key Insight:** This is a critical Windows batch scripting gotcha that affects all paths with spaces when using `%~dp0` in quoted arguments.
+
+**Prevention:** Always strip trailing backslash from `%~dp0` before passing to PowerShell
+
+**Time Lost:** 45 minutes
+**Impact:** Critical - Causes cryptic "illegal characters" error
+
+---
+
+### Issue 15: Dependency Version Doesn't Exist in PyPI
+
+**Symptom:** `pip install` fails: "No matching distribution found for BAC0==24.9.6"
+
+**Root Cause:**
+- `requirements.txt` specified non-existent version
+- Package uses different versioning scheme (e.g., calendar versioning)
+- Version typo or version removed from PyPI
+
+**Wrong Approach:**
+```txt
+# requirements.txt - Version doesn't exist
+BAC0==24.9.6
+```
+
+**Correct Solution:**
+```txt
+# Verify version exists in PyPI before packaging
+BAC0==2024.9.20  # Latest stable 2024.9 release
+```
+
+**Verification:**
+```bash
+# Check available versions
+pip index versions BAC0
+
+# Or search PyPI
+curl https://pypi.org/pypi/BAC0/json | jq '.releases | keys'
+```
+
+**Prevention:**
+1. Test `pip install -r requirements.txt` in clean virtualenv before creating MSI
+2. Use version ranges for flexibility: `BAC0>=2024.9.0,<2025.0.0`
+3. Pin exact versions only after verification
+
+**Key Insight:** MSI testing must include full dependency installation, not just file packaging
+
+**Time Lost:** 15 minutes
+**Impact:** High - Blocks entire installation
+
+---
+
+### Issue 16: Pip Self-Upgrade File Locking on Windows
+
+**Symptom:** PowerShell wizard fails during pip upgrade with "ERROR: To modify pip, please run the following command..."
+
+**Root Cause:**
+- When `pip.exe install --upgrade pip` is executed, pip tries to upgrade itself
+- On Windows, pip.exe is locked by the current process (can't modify running executable)
+- Python prevents modifying files that are currently in use
+- Error message is cryptic and doesn't explain the Windows file locking issue
+
+**Wrong Approach:**
+```powershell
+# WRONG - pip.exe can't upgrade itself while running
+& "venv\Scripts\pip.exe" install --upgrade pip setuptools wheel
+# Error: "To modify pip, please run the following command..."
+```
+
+**Correct Solution:**
+```powershell
+# RIGHT - Use python -m pip to launch new process
+& "venv\Scripts\python.exe" -m pip install --upgrade pip setuptools wheel
+```
+
+**Why This Works:**
+- `python -m pip` launches a new Python process
+- The new process loads pip as a module (not pip.exe)
+- pip can now upgrade pip.exe because it's not the currently running file
+- This is the recommended approach from pip documentation
+
+**Alternative Approach (Skip upgrade if recent):**
+```powershell
+$pipVersion = & "venv\Scripts\pip.exe" --version
+if ($pipVersion -match "pip (\d+)\.(\d+)") {
+    $major = [int]$Matches[1]
+    $minor = [int]$Matches[2]
+    if ($major -ge 24) {
+        Write-Host "  pip $major.$minor is recent enough, skipping upgrade" -ForegroundColor Gray
+        $skipPipUpgrade = $true
+    }
+}
+
+if (-not $skipPipUpgrade) {
+    & "venv\Scripts\python.exe" -m pip install --upgrade pip setuptools wheel
+}
+```
+
+**Prevention:**
+1. **Always use** `python -m pip` for pip operations in scripts
+2. **Never invoke** `pip.exe` directly for upgrade operations
+3. **Test wizard** in clean environment before building MSI
+
+**Key Insight:** Windows file locking prevents self-modification of running executables. Always use `python -m pip` for pip operations, especially upgrades.
+
+**Time Lost:** 30 minutes
+**Impact:** High - Blocks dependency installation
+
+---
+
 ## Preventive Checks
 
 Before releasing installer, verify:
@@ -538,8 +735,47 @@ Write-Host "Components in MSI: $components"
 # 4. Verify file ID exists
 $configBatId = ([regex]::Match($wxs, 'File Id="([^"]+)"[^>]*CONFIGURE\.bat')).Groups[1].Value
 Write-Host "CONFIGURE.bat file ID: $configBatId"
-# Should match ID in OperationsHub-Minimal.wxs
+# Should match ID in main .wxs file
+
+# 5. Test requirements.txt in clean environment
+python -m venv test-venv
+& "test-venv\Scripts\python.exe" -m pip install -r requirements.txt
+# Should complete without "No matching distribution" errors
+Remove-Item test-venv -Recurse -Force
+
+# 6. Verify %~dp0 trailing backslash is stripped
+# In CONFIGURE.bat, ensure this pattern is used:
+# set "INSTALL_DIR=%~dp0"
+# if "%INSTALL_DIR:~-1%"=="\" set "INSTALL_DIR=%INSTALL_DIR:~0,-1%"
 ```
+
+---
+
+## Summary of All 16 Critical Issues
+
+| # | Issue | Category | Time Lost | Prevention |
+|---|-------|----------|-----------|------------|
+| 1 | Bash redirect creates literal "nul" file | Build | 2h | Use batch scripts |
+| 2 | $PSScriptRoot empty from bash | Build | 1h | Pass explicit paths |
+| 3 | Component references mismatch | Build | 3h | Run fix-wix-refs.py |
+| 4 | MSI included excluded files | Build | 2h | Test exclusions |
+| 5 | WixShellExecTarget requires file reference | Build | 1h | Use [#fileID] syntax |
+| 6 | PowerShell function call with () | Wizard | 30min | No parentheses |
+| 7 | Script launched before exit dialog | Build | 1h | Use UI Publish |
+| 8 | License.rtf not found | Build | 30min | Keep in installer/ |
+| 9 | Missing WixUtilExtension | Build | 30min | Load both extensions |
+| 10 | Circular reference | Build | 1h | Exclude installer/ |
+| 11 | Admin check blocked script | Wizard | 30min | Auto-elevate |
+| 12 | Path spaces in Start-Process | Wizard | 1h | Use cmd /c wrapper |
+| 13 | 32/64-bit PowerShell paths | Deploy | 30min | Pass explicit path |
+| 14 | %~dp0 trailing backslash | Deploy | 45min | Strip backslash |
+| 15 | Non-existent PyPI version | Deploy | 15min | Test requirements.txt |
+| 16 | Pip self-upgrade locking | Deploy | 30min | Use python -m pip |
+
+**Total Time Lost:** ~16.5 hours
+**With Skill Guidance:** ~2 hours
+**Time Saved:** ~14.5 hours per installer
+**Value Delivered:** Prevents 15+ hours of debugging per installer
 
 ---
 

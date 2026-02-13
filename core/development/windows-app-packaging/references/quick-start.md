@@ -68,13 +68,76 @@ cd installer
 .\rebuild-msi.bat
 ```
 
-**Verification checklist:**
+**Pre-Build Validation Checklist:**
+- [ ] License.rtf exists in installer/ directory
+- [ ] Version number updated in .wxs file
+- [ ] ExcludeFilter.xslt excludes installer/ directory
+- [ ] fix-wix-refs.py script exists
+- [ ] requirements.txt versions verified in PyPI
+- [ ] CONFIGURE.bat strips %~dp0 trailing backslash
+
+**Build Verification Checklist:**
 - [ ] MSI size < 5 MB (for source-only apps)
-- [ ] License agreement shows
+- [ ] No LGHT0094 errors (unresolved component references)
+- [ ] No circular reference errors
+- [ ] heat.exe completed without warnings
+- [ ] candle.exe completed without errors
+- [ ] light.exe completed without errors
+
+**Installation Testing Checklist:**
+- [ ] License agreement shows correctly
 - [ ] Directory selection works
-- [ ] Files install to correct location
+- [ ] Files install to correct location (C:\Program Files\App)
 - [ ] Start Menu shortcuts created
-- [ ] Exit dialog checkbox shows
-- [ ] Config wizard launches after clicking Finish
-- [ ] Wizard completes without errors
-- [ ] Application runs after configuration
+- [ ] No venv/ or instance/ in installed files
+- [ ] No .db or .sqlite3 files in installed files
+- [ ] Uninstall works cleanly
+
+**Exit Dialog & Launch Checklist:**
+- [ ] Exit dialog appears after installation
+- [ ] "Launch configuration wizard" checkbox shows
+- [ ] Checkbox is checked by default
+- [ ] CONFIGURE.bat launches when Finish clicked
+- [ ] Auto-elevation UAC prompt appears
+- [ ] Script runs as Administrator
+
+**Wizard Validation Checklist (10 Patterns):**
+- [ ] Python version check (3.11+ required)
+- [ ] Write permission validation passes
+- [ ] Virtual environment creates successfully
+- [ ] pip upgrade uses `python -m pip` (not pip.exe)
+- [ ] Dependencies install without errors
+- [ ] .env file created from template
+- [ ] Secret key generated with entropy validation
+- [ ] Static files collect without errors
+- [ ] Database migrations apply successfully
+- [ ] Port 8000 availability checked
+
+**Post-Configuration Testing:**
+- [ ] Application starts without errors
+- [ ] Can access http://localhost:8000
+- [ ] No permission errors in logs
+- [ ] Database initialized with tables
+- [ ] Static files served correctly
+
+**Deployment Issues Prevention (Issues 13-16):**
+- [ ] Tested on 32-bit PowerShell environment
+- [ ] Tested on 64-bit PowerShell environment
+- [ ] %~dp0 trailing backslash stripped in CONFIGURE.bat
+- [ ] All requirements.txt versions exist in PyPI
+- [ ] Wizard uses `python -m pip` exclusively
+
+**Clean Machine Test:**
+- [ ] Test on Windows 10 (64-bit)
+- [ ] Test on Windows 11 (64-bit)
+- [ ] Test with fresh Python install
+- [ ] Test with no previous application version
+- [ ] Test uninstall leaves no orphaned files
+
+**Estimated Time:**
+- Build: 2-5 minutes
+- Installation test: 3-5 minutes
+- Configuration wizard: 2-3 minutes
+- Full validation: 10-15 minutes
+
+**With validation patterns:** Prevents 15+ hours of debugging per installer
