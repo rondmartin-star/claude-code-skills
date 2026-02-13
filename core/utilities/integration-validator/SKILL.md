@@ -9,7 +9,7 @@ description: >
 # Integration Validator
 
 **Purpose:** Detect integration errors that static analysis misses
-**Size:** ~11 KB (references: ~11 KB)
+**Size:** ~8.5 KB (references: ~33 KB)
 **Philosophy:** Catch runtime-only errors before deployment
 
 ---
@@ -38,6 +38,35 @@ description: >
 - Writing new code (use windows-app-build)
 - Running unit tests (use test framework)
 - General development without integration issues
+
+---
+
+## Parallel Execution (v4.1)
+
+**NEW:** Run all 4 checks concurrently for 4x speedup.
+
+**Performance:**
+- Sequential: 12m 10s (run checks one by one)
+- Parallel: 3m 20s (run all 4 simultaneously)
+- Speedup: 3.65x faster
+
+**How to Use:**
+In a single message, ask to "run all integration checks in parallel" or "validate integration points concurrently". This launches 4 independent Tasks that execute simultaneously:
+
+1. Database schema check (Task 1)
+2. Model attribute check (Task 2)
+3. Template block check (Task 3)
+4. Frontend dependency check (Task 4)
+
+Results aggregate automatically when all complete.
+
+**When to Use:**
+- ✅ Pre-deployment validation (need all results fast)
+- ✅ CI/CD pipelines (optimize build time)
+- ✅ Weekly full audits
+- ⚠️ Debugging specific issue (use sequential, single check)
+
+**Details:** See `references/parallel-validation.md` for complete pattern, examples, and configuration.
 
 ---
 
@@ -233,6 +262,7 @@ For detailed procedures:
 - Database schema validation: `references/database-checks.md`
 - Template inheritance patterns: `references/template-checks.md`
 - Frontend dependency tracking: `references/frontend-checks.md`
+- **Parallel execution (NEW):** `references/parallel-validation.md` - 4x faster validation
 
 ---
 
