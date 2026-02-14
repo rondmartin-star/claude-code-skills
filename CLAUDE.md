@@ -292,6 +292,107 @@ Every artifact has a **source mode** defining editing workflow:
 
 ---
 
+## Skills Directory Management
+
+### GitHub Refresh on Session Start
+
+**Automatically refresh skills from GitHub at the beginning of each session.**
+
+**Process:**
+1. At session start, check if `~/.claude/skills/.git` exists
+2. If yes, run `git pull origin main` to get latest updates
+3. If no, run `git clone https://github.com/pterodactyl-holdings/claude-skills.git ~/.claude/skills`
+4. Log refresh status (success, conflicts, errors)
+5. If conflicts detected, notify user and preserve local changes
+
+**Implementation:**
+```bash
+# Session start hook (runs automatically)
+if [ -d ~/.claude/skills/.git ]; then
+  cd ~/.claude/skills
+  git pull origin main
+  if [ $? -ne 0 ]; then
+    echo "⚠️  Skills update failed. Local changes preserved."
+  else
+    echo "✅ Skills updated from GitHub"
+  fi
+else
+  git clone https://github.com/pterodactyl-holdings/claude-skills.git ~/.claude/skills
+  echo "✅ Skills cloned from GitHub"
+fi
+```
+
+**Error Handling:**
+- **Merge conflicts:** Preserve local changes, notify user for manual resolution
+- **Network errors:** Continue with existing skills, log warning
+- **Permission errors:** Notify user, suggest fixing permissions
+
+### Skills Directory Monitoring
+
+**Monitor `~/.claude/skills` for updates and automatically adopt new changes.**
+
+**What to Monitor:**
+1. **New Skills:** Detect new SKILL.md files in `core/` directories
+2. **Skill Updates:** Detect modifications to existing SKILL.md files
+3. **Configuration Changes:** Detect updates to `config/templates/` files
+4. **Documentation Updates:** Detect changes to guides (PARALLELIZATION-GUIDE.md, etc.)
+
+**Monitoring Process:**
+```bash
+# Watch for changes (runs in background)
+fswatch -0 ~/.claude/skills | while read -d "" event; do
+  # Detect change type
+  if [[ $event == */SKILL.md ]]; then
+    echo "📝 Skill updated: $event"
+    # Reload skill metadata
+    reload_skill_metadata "$event"
+  elif [[ $event == */config/templates/* ]]; then
+    echo "⚙️  Config template updated: $event"
+    # Validate config schema
+    validate_config_template "$event"
+  elif [[ $event == *GUIDE.md ]]; then
+    echo "📚 Documentation updated: $event"
+    # Refresh documentation index
+    refresh_docs_index
+  fi
+done
+```
+
+**Adoption Behavior:**
+1. **Hot Reload:** New skills immediately available without restart
+2. **Version Check:** Warn if skill version incompatible with current ecosystem version
+3. **Dependency Check:** Verify skill dependencies met before adoption
+4. **Rollback:** Allow reverting to previous skill version if issues arise
+
+**User Notifications:**
+```
+✨ New skill available: ui-generation-orchestrator (v1.0.0)
+📝 Skill updated: svelte-component-generator (v1.1.0 → v1.2.0)
+⚠️  Skill requires convergence-engine v4.1+
+```
+
+**Configuration:**
+```json
+// In ~/.claude/config.json
+{
+  "skills": {
+    "directory": "~/.claude/skills",
+    "autoUpdate": true,
+    "githubRepo": "https://github.com/pterodactyl-holdings/claude-skills.git",
+    "monitoringEnabled": true,
+    "updateCheckInterval": 3600  // Check every hour (in seconds)
+  }
+}
+```
+
+**Safety Mechanisms:**
+- **Validation:** All changes validated before adoption (SKILL.md schema, file size <15KB)
+- **Backup:** Previous versions backed up in `~/.claude/skills/.backups/`
+- **User Approval:** Critical updates require user confirmation
+- **Rollback:** Quick revert to previous version if issues occur
+
+---
+
 ## Configuration Schema (corpus-config.json)
 
 ### Complete Structure
