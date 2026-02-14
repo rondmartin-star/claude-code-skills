@@ -59,6 +59,7 @@ description: >
 | "requirements", "user stories", "what should it do" | windows-app-requirements |
 | "data model", "database schema", "entities" | windows-app-system-design |
 | "UI design", "pages", "screens", "workflows", "logo" | windows-app-ui-design |
+| "generate UI", "create components", "Svelte", "design system" | ui-generation-orchestrator |
 | "code", "implement", "fix", "bug", "package" | windows-app-build |
 | "debug UI", "Playwright", "test UI", "pixel perfect" | windows-app-ui-testing |
 | "test strategy", "coverage gaps", "test plan", "convergence" | windows-app-testing-strategy |
@@ -86,6 +87,11 @@ Ask the user to clarify their current phase:
 "/mnt/skills/user/windows-app-build/SKILL.md"                # ~25 KB
 "/mnt/skills/user/windows-app-ui-testing/SKILL.md"           # ~14 KB (Playwright)
 "/mnt/skills/user/windows-app-testing-strategy/SKILL.md"     # ~14 KB (Convergence)
+
+# UI Generation Skills (load when generating components)
+"/mnt/skills/core/development/ui-generation-orchestrator/SKILL.md"    # ~12 KB
+"/mnt/skills/core/development/svelte-component-generator/SKILL.md"    # ~12 KB
+"/mnt/skills/core/development/design-system-manager/SKILL.md"         # ~10 KB
 
 # Specialized Skills (load alongside build when relevant)
 "/mnt/skills/user/authentication-patterns/SKILL.md"          # ~4 KB

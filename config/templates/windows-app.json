@@ -51,6 +51,50 @@
     }
   },
 
+  "ui": {
+    "framework": {
+      "name": "svelte",
+      "version": "5.0.0",
+      "runtime": "sveltekit",
+      "typescript": true
+    },
+    "styling": {
+      "framework": "tailwind",
+      "version": "3.4.0",
+      "configFile": "tailwind.config.js"
+    },
+    "components": {
+      "directory": "src/ui/components",
+      "namingConvention": "PascalCase",
+      "testDirectory": "tests/ui"
+    },
+    "accessibility": {
+      "wcagLevel": "AA",
+      "tools": ["axe", "lighthouse"]
+    }
+  },
+
+  "design_system": {
+    "version": "1.0.0",
+    "colors": {
+      "primary": {
+        "500": "#3b82f6"
+      },
+      "semantic": {
+        "success": "#10b981",
+        "error": "#ef4444"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "sans": ["Inter", "system-ui", "sans-serif"]
+      }
+    },
+    "spacing": {
+      "base": "4px"
+    }
+  },
+
   "framework": {
     "categories": [
       {

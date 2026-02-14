@@ -51,6 +51,81 @@
     }
   },
 
+  "ui": {
+    "framework": {
+      "name": "svelte",
+      "version": "5.0.0",
+      "runtime": "sveltekit",
+      "typescript": true
+    },
+    "styling": {
+      "framework": "tailwind",
+      "version": "3.4.0",
+      "configFile": "tailwind.config.js"
+    },
+    "components": {
+      "directory": "src/frontend/components",
+      "namingConvention": "PascalCase",
+      "testDirectory": "tests/components"
+    },
+    "accessibility": {
+      "wcagLevel": "AA",
+      "tools": ["axe", "lighthouse"]
+    },
+    "performance": {
+      "budgets": {
+        "maxTotalBundle": "500 KB",
+        "maxJSBundle": "300 KB",
+        "maxCSSBundle": "50 KB"
+      },
+      "coreWebVitals": {
+        "lcp": { "good": 2500 },
+        "fid": { "good": 100 },
+        "cls": { "good": 0.1 }
+      }
+    }
+  },
+
+  "design_system": {
+    "version": "1.0.0",
+    "colors": {
+      "primary": {
+        "500": "#3b82f6",
+        "600": "#2563eb",
+        "700": "#1d4ed8"
+      },
+      "semantic": {
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+        "info": "#3b82f6"
+      },
+      "neutral": {
+        "50": "#f9fafb",
+        "500": "#6b7280",
+        "900": "#111827"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "sans": ["Inter", "system-ui", "sans-serif"]
+      },
+      "fontSizes": {
+        "base": { "size": "1rem", "lineHeight": "1.5rem" },
+        "lg": { "size": "1.125rem", "lineHeight": "1.75rem" }
+      }
+    },
+    "spacing": {
+      "base": "4px",
+      "scale": {
+        "1": "4px",
+        "2": "8px",
+        "4": "16px",
+        "8": "32px"
+      }
+    }
+  },
+
   "framework": {
     "categories": [
       {

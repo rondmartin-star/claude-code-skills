@@ -10,6 +10,9 @@
 | "data model", "database schema", "entities" | system-design |
 | "UI", "pages", "screens", "workflows", "navigation" | ui-design |
 | "logo", "brand", "colors", "styling" | ui-design |
+| "generate UI", "create components", "build components" | ui-generation-orchestrator |
+| "Svelte", "React", "Vue", "component library" | ui-generation-orchestrator |
+| "design system", "design tokens", "Tailwind config" | ui-generation-orchestrator |
 | "OAuth", "Google login", "authentication", "login page" | authentication-patterns |
 | "HTTPS", "SSL", "Caddy", "production deployment" | build (HTTPS section) |
 | "code", "implement", "fix", "bug", "package", "deliver" | build |
