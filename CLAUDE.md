@@ -132,9 +132,9 @@ skills/
 
 ---
 
-## v4.1 Universal Parallelization (2026-02-12)
+## v4.1 Intelligent Parallelization (2026-02-14)
 
-**Major Enhancement:** Ecosystem-wide parallelization for 40-50% performance improvement.
+**Major Enhancement:** Selective parallelization where it provides real value for 40-50% performance improvement on parallelized operations.
 
 ### Three-Tier Parallel Architecture
 
@@ -186,22 +186,22 @@ skills/
 - 40% faster deployments (8-10h → 5-6h)
 - 63% cost reduction ($1200 → $450 per cycle)
 
-### Parallelized Skills (v4.1)
+### Parallelization Coverage (v4.1)
 
-**Full Parallelization Support:**
-- ✅ `audit-orchestrator` - 15 methodologies in parallel
-- ✅ `convergence-engine` - Multi-methodology convergence
-- ✅ `review-edit-author` - Batch content operations
-- ✅ `integration-validator` - 4 validators in parallel (NEW)
-- ✅ `skill-ecosystem-manager` - 7 parallel patterns (NEW)
-- ✅ `windows-app-orchestrator` - Quality gates & pre-deployment (NEW)
-- ✅ `windows-app-packaging` - 7 parallel packaging operations (NEW)
+**Philosophy:** Intelligent parallelization where valuable (24/61 skills - 39%)
 
-**Partial Parallelization:**
-- 🟡 `battle-plan` - Phase 2+3 parallel
-- 🟡 `iterative-phase-review` - Phase 5 monitoring
+| Category | Parallelized | Total | % | Approach |
+|----------|--------------|-------|---|----------|
+| Audit | 9 | 12 | 75% | High-volume batch operations |
+| Content | 3 | 4 | 75% | Multi-document workflows |
+| Publishing | 2 | 2 | 100% | Multi-platform by design |
+| Development | 5 | 14 | 36% | Validation & generation only |
+| Corpus | 2 | 6 | 33% | Multi-artifact operations only |
+| Utilities | 2 | 7 | 29% | Integration & ecosystem only |
+| Learning | 2 | 13 | 15% | Mostly sequential planning |
+| Core | 0 | 1 | 0% | Orchestrator delegates |
 
-**Total:** 9 skills with parallelization (7 full, 2 partial)
+**Key Principle:** Parallelize where 2x+ speedup proven, not universally
 
 **Production-Tested:**
 - ✅ `windows-app-packaging` - Operations Hub MSI (16 issues prevented, 20.5h saved)

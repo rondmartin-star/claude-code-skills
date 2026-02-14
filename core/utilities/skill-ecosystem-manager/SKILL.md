@@ -91,6 +91,49 @@ Claude: [Launches 10 Task tool calls in single message]
 
 ---
 
+## v4.1 Intelligent Parallelization Decision Framework
+
+**When creating a new skill, decide if parallelization adds value:**
+
+### ✅ Add Parallelization If:
+
+- **Independent operations** - No dependencies between items
+- **Batch/multiple items** - Commonly processes 10+ items
+- **Proven speedup** - Expected > 2x performance improvement
+- **Examples:** Batch CRUD, multi-platform publishing, parallel validation, concurrent analysis
+
+### ❌ Skip Parallelization If:
+
+- **Sequential workflow** - Step A must complete before step B
+- **Single-item operations** - Primarily works with one item at a time
+- **User interaction** - Requires human input (can't parallelize)
+- **Data integrity** - Sequential processing ensures correctness
+- **Planning/design** - Inherently sequential activities
+- **Examples:** Status checks, configuration edits, user confirmation, workflow planning
+
+### 🎯 Current Ecosystem State
+
+**Total Skills:** 61 (v4.1 architecture)
+**Parallelized:** 24 skills (39% - optimal coverage)
+**Non-parallelized:** 37 skills (61% - intentionally sequential)
+
+| Category | Parallelized | Total | % | Rationale |
+|----------|--------------|-------|---|-----------|
+| Audit | 9 | 12 | 75% | High-volume batch operations |
+| Content | 3 | 4 | 75% | Multi-document workflows |
+| Publishing | 2 | 2 | 100% | Multi-platform by design |
+| Development | 5 | 14 | 36% | Only validation/generation |
+| Corpus | 2 | 6 | 33% | Only multi-artifact ops |
+| Utilities | 2 | 7 | 29% | Only integration/ecosystem |
+| Learning | 2 | 13 | 15% | Mostly sequential planning |
+| Core | 0 | 1 | 0% | Orchestrator delegates |
+
+**Philosophy:** Intelligent parallelization where valuable, not universal coverage.
+
+**See:** `references/parallelization-decision-guide.md` for detailed decision trees
+
+---
+
 ## Core Design Philosophy
 
 ### The 15KB Rule
@@ -251,10 +294,14 @@ Before creating a new skill:
 - [ ] Can it fit in < 15 KB? (or needs references)
 - [ ] Does it overlap with existing skills?
 - [ ] What triggers should load it?
+- [ ] **v4.1:** Does it need parallelization? (Use decision framework above)
+- [ ] **v4.1:** Which parallelization pattern applies? (If parallelized)
+- [ ] **v4.1:** Document why parallelization included/excluded
 
 **For detailed templates and procedures:**
 ```
-/mnt/skills/user/skill-ecosystem-manager/references/skill-templates.md
+references/skill-templates.md (includes v4.1 template)
+references/parallelization-decision-guide.md (decision trees)
 ```
 
 ---
