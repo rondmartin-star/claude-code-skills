@@ -61,6 +61,7 @@ description: >
 | "UI design", "pages", "screens", "workflows", "logo" | windows-app-ui-design |
 | "code", "implement", "fix", "bug", "package" | windows-app-build |
 | "debug UI", "Playwright", "test UI", "pixel perfect" | windows-app-ui-testing |
+| "test strategy", "coverage gaps", "test plan", "convergence" | windows-app-testing-strategy |
 | "OAuth", "Google login", "authentication" | authentication-patterns |
 | "security", "XSS", "SQL injection", "CSRF" | secure-coding-patterns |
 | "auto-start", "supervisor", "watchdog", "MSI" | windows-app-supervision |
@@ -79,16 +80,17 @@ Ask the user to clarify their current phase:
 
 ```python
 # Core Windows App Skills
-"/mnt/skills/user/windows-app-requirements/SKILL.md"      # ~8 KB
-"/mnt/skills/user/windows-app-ui-design/SKILL.md"         # ~10 KB
-"/mnt/skills/user/windows-app-system-design/SKILL.md"     # ~12 KB
-"/mnt/skills/user/windows-app-build/SKILL.md"             # ~25 KB
-"/mnt/skills/user/windows-app-ui-testing/SKILL.md"        # ~14 KB (Playwright)
+"/mnt/skills/user/windows-app-requirements/SKILL.md"         # ~8 KB
+"/mnt/skills/user/windows-app-ui-design/SKILL.md"            # ~10 KB
+"/mnt/skills/user/windows-app-system-design/SKILL.md"        # ~12 KB
+"/mnt/skills/user/windows-app-build/SKILL.md"                # ~25 KB
+"/mnt/skills/user/windows-app-ui-testing/SKILL.md"           # ~14 KB (Playwright)
+"/mnt/skills/user/windows-app-testing-strategy/SKILL.md"     # ~14 KB (Convergence)
 
 # Specialized Skills (load alongside build when relevant)
-"/mnt/skills/user/authentication-patterns/SKILL.md"       # ~4 KB
-"/mnt/skills/user/secure-coding-patterns/SKILL.md"        # ~10 KB
-"/mnt/skills/user/windows-app-supervision/SKILL.md"       # ~8 KB
+"/mnt/skills/user/authentication-patterns/SKILL.md"          # ~4 KB
+"/mnt/skills/user/secure-coding-patterns/SKILL.md"           # ~10 KB
+"/mnt/skills/user/windows-app-supervision/SKILL.md"          # ~8 KB
 ```
 
 **Rules:**
@@ -168,6 +170,28 @@ This workflow:
 - Provides visual context
 - Enables pixel-perfect iteration
 - Catches layout issues invisible in code
+
+### windows-app-testing-strategy
+**Load when user says:**
+- "Create test strategy" / "Test coverage plan"
+- "Identify coverage gaps" / "Find untested code"
+- "Improve test quality" / "Test convergence"
+- "Parallel test execution" / "Speed up tests"
+- "Test automation" / "CI/CD testing"
+
+**Do NOT load when:** Writing individual tests (use windows-app-ui-testing)
+
+**Key Features:**
+- **Multi-methodology convergence:** 3 consecutive clean passes
+- **Parallel execution:** 67% faster (120s → 40s)
+- **Learning integration:** verify-evidence, detect-infinite-loop, error-reflection
+- **Context optimization:** 69% token reduction
+- **Automated gap detection:** Priority-based coverage analysis
+
+**Proven Results:** Operations Hub test strategy
+- 7 orthogonal methodologies
+- Dependency-aware parallelization
+- Pattern library for compound learning
 
 ### windows-app-supervision (Process Management + MSI)
 **Load when user says:**
