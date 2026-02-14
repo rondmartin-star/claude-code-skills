@@ -1,0 +1,373 @@
+{
+  "corpus": {
+    "name": "MySvelteApp",
+    "description": "Modern web application built with SvelteKit and Tailwind CSS",
+    "version": "1.0.0",
+    "baseDir": "/absolute/path/to/project"
+  },
+
+  "artifacts": {
+    "requirements": {
+      "path": "docs/requirements",
+      "label": "Requirements",
+      "extensions": [".md"],
+      "sourceMode": "corpus"
+    },
+    "design-specs": {
+      "path": "docs/design",
+      "label": "UI Design Specifications",
+      "extensions": [".md", ".html"],
+      "sourceMode": "corpus"
+    },
+    "architecture": {
+      "path": "docs/architecture",
+      "label": "System Architecture",
+      "extensions": [".md"],
+      "sourceMode": "bidirectional"
+    },
+    "ui-components": {
+      "path": "src/lib/components",
+      "label": "Svelte Components",
+      "extensions": [".svelte", ".ts"],
+      "sourceMode": "source"
+    },
+    "pages": {
+      "path": "src/routes",
+      "label": "SvelteKit Pages",
+      "extensions": [".svelte", ".ts"],
+      "sourceMode": "source"
+    },
+    "models": {
+      "path": "src/lib/models",
+      "label": "Data Models",
+      "extensions": [".ts"],
+      "sourceMode": "source"
+    },
+    "tests": {
+      "path": "src/tests",
+      "label": "Tests",
+      "extensions": [".test.ts", ".spec.ts"],
+      "sourceMode": "source"
+    }
+  },
+
+  "ui": {
+    "framework": {
+      "name": "svelte",
+      "version": "5.0.0",
+      "runtime": "sveltekit",
+      "typescript": true
+    },
+    "styling": {
+      "framework": "tailwind",
+      "version": "3.4.0",
+      "configFile": "tailwind.config.js"
+    },
+    "components": {
+      "directory": "src/lib/components",
+      "namingConvention": "PascalCase",
+      "testDirectory": "src/lib/components",
+      "indexFile": "src/lib/components/index.ts"
+    },
+    "accessibility": {
+      "wcagLevel": "AA",
+      "tools": ["axe", "lighthouse"],
+      "colorContrastMinimum": 4.5
+    },
+    "performance": {
+      "budgets": {
+        "maxTotalBundle": "500 KB",
+        "maxJSBundle": "300 KB",
+        "maxCSSBundle": "50 KB"
+      },
+      "coreWebVitals": {
+        "lcp": { "good": 2500, "needsImprovement": 4000 },
+        "fid": { "good": 100, "needsImprovement": 300 },
+        "cls": { "good": 0.1, "needsImprovement": 0.25 }
+      }
+    }
+  },
+
+  "design_system": {
+    "version": "1.0.0",
+    "colors": {
+      "primary": {
+        "50": "#eff6ff",
+        "100": "#dbeafe",
+        "200": "#bfdbfe",
+        "300": "#93c5fd",
+        "400": "#60a5fa",
+        "500": "#3b82f6",
+        "600": "#2563eb",
+        "700": "#1d4ed8",
+        "800": "#1e40af",
+        "900": "#1e3a8a",
+        "950": "#172554"
+      },
+      "semantic": {
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+        "info": "#3b82f6"
+      },
+      "neutral": {
+        "50": "#f9fafb",
+        "100": "#f3f4f6",
+        "200": "#e5e7eb",
+        "300": "#d1d5db",
+        "400": "#9ca3af",
+        "500": "#6b7280",
+        "600": "#4b5563",
+        "700": "#374151",
+        "800": "#1f2937",
+        "900": "#111827",
+        "950": "#030712"
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "sans": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        "serif": ["Georgia", "Cambria", "Times New Roman", "Times", "serif"],
+        "mono": ["Fira Code", "Consolas", "Monaco", "Courier New", "monospace"]
+      },
+      "fontSizes": {
+        "xs": { "size": "0.75rem", "lineHeight": "1rem" },
+        "sm": { "size": "0.875rem", "lineHeight": "1.25rem" },
+        "base": { "size": "1rem", "lineHeight": "1.5rem" },
+        "lg": { "size": "1.125rem", "lineHeight": "1.75rem" },
+        "xl": { "size": "1.25rem", "lineHeight": "1.75rem" },
+        "2xl": { "size": "1.5rem", "lineHeight": "2rem" },
+        "3xl": { "size": "1.875rem", "lineHeight": "2.25rem" },
+        "4xl": { "size": "2.25rem", "lineHeight": "2.5rem" }
+      },
+      "fontWeights": {
+        "thin": "100",
+        "extralight": "200",
+        "light": "300",
+        "normal": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700",
+        "extrabold": "800",
+        "black": "900"
+      }
+    },
+    "spacing": {
+      "base": "4px",
+      "scale": {
+        "0": "0px",
+        "px": "1px",
+        "0.5": "2px",
+        "1": "4px",
+        "1.5": "6px",
+        "2": "8px",
+        "2.5": "10px",
+        "3": "12px",
+        "3.5": "14px",
+        "4": "16px",
+        "5": "20px",
+        "6": "24px",
+        "7": "28px",
+        "8": "32px",
+        "9": "36px",
+        "10": "40px",
+        "11": "44px",
+        "12": "48px",
+        "14": "56px",
+        "16": "64px",
+        "20": "80px",
+        "24": "96px",
+        "28": "112px",
+        "32": "128px"
+      }
+    },
+    "borderRadius": {
+      "none": "0px",
+      "sm": "0.125rem",
+      "DEFAULT": "0.25rem",
+      "md": "0.375rem",
+      "lg": "0.5rem",
+      "xl": "0.75rem",
+      "2xl": "1rem",
+      "3xl": "1.5rem",
+      "full": "9999px"
+    },
+    "shadows": {
+      "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "DEFAULT": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+      "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+      "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+      "2xl": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+      "inner": "inset 0 2px 4px 0 rgb(0 0 0 / 0.05)",
+      "none": "0 0 #0000"
+    },
+    "breakpoints": {
+      "xs": "320px",
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px",
+      "2xl": "1536px"
+    }
+  },
+
+  "framework": {
+    "categories": [
+      {
+        "id": "ui-components",
+        "label": "UI Component Patterns",
+        "terms": [
+          "Button component",
+          "Input field",
+          "Select dropdown",
+          "Checkbox control",
+          "Radio button",
+          "Card layout",
+          "Modal dialog",
+          "Form validation",
+          "Toast notification",
+          "Loading spinner"
+        ],
+        "canonicalSource": "ui-components",
+        "matchMode": "word-boundary"
+      },
+      {
+        "id": "design-tokens",
+        "label": "Design System Tokens",
+        "terms": [
+          "Primary color",
+          "Secondary color",
+          "Success indicator",
+          "Error state",
+          "Warning message",
+          "Base spacing unit",
+          "Typography scale",
+          "Shadow elevation"
+        ],
+        "canonicalSource": "design-specs",
+        "matchMode": "word-boundary"
+      }
+    ]
+  },
+
+  "voice": {
+    "promptFile": "docs/system-prompt.md",
+    "attributes": [
+      "professional",
+      "technical",
+      "clear",
+      "consistent",
+      "accessible",
+      "modern"
+    ],
+    "avoid": [
+      "marketing jargon",
+      "ambiguous terminology",
+      "inconsistent naming"
+    ],
+    "preferredTerms": {
+      "Button": "Action button with verb-based label",
+      "Modal": "Dialog overlay",
+      "Toast": "Notification message",
+      "Loading": "Async operation indicator",
+      "Disabled": "Unavailable state",
+      "Error": "Validation feedback"
+    },
+    "uiGuidelines": {
+      "buttonLabels": "verb-based, action-oriented (Save, Delete, Cancel)",
+      "errorMessages": "constructive, solution-focused (Required field, Invalid format)",
+      "placeholders": "example-based, not instructions (user@example.com)",
+      "formLabels": "descriptive, consistent capitalization (Email Address)",
+      "tooltips": "context-aware, concise (Under 50 characters)"
+    }
+  },
+
+  "roles": {
+    "available": ["admin", "editor", "author", "reviewer", "viewer", "pending"],
+    "defaultRole": "pending",
+    "aiAccess": ["admin", "editor", "author"],
+    "editAccess": ["admin", "editor", "author"]
+  },
+
+  "audit": {
+    "methodology": "multi-methodology-3-3-1",
+    "applicable_audits": [
+      "security",
+      "quality",
+      "performance",
+      "accessibility",
+      "consistency",
+      "navigation",
+      "ui-consistency",
+      "ui-accessibility"
+    ],
+    "convergence": {
+      "enabled": true,
+      "automated": {
+        "max_iterations": 10,
+        "required_clean_passes": 3
+      },
+      "user_validation": {
+        "required": true,
+        "after_automated_convergence": true,
+        "min_testers": 2
+      },
+      "methodologies": [
+        {
+          "name": "technical",
+          "audits": [
+            { "id": "security" },
+            { "id": "quality" },
+            { "id": "performance" },
+            { "id": "ui-quality" }
+          ]
+        },
+        {
+          "name": "user",
+          "audits": [
+            { "id": "accessibility" },
+            { "id": "ui-accessibility" },
+            { "id": "ui-usability" }
+          ]
+        },
+        {
+          "name": "holistic",
+          "audits": [
+            { "id": "consistency" },
+            { "id": "ui-consistency" },
+            { "id": "navigation" }
+          ]
+        }
+      ]
+    }
+  },
+
+  "testing": {
+    "strategy": "multi-methodology-convergence",
+    "framework": "vitest",
+    "e2e": "playwright",
+    "coverage": {
+      "minimum": 80,
+      "target": 90
+    },
+    "visual_regression": {
+      "enabled": true,
+      "tool": "playwright",
+      "threshold": 0.001
+    }
+  },
+
+  "packaging": {
+    "bundler": "vite",
+    "target": "es2020",
+    "minify": true,
+    "sourcemaps": true
+  },
+
+  "traceability": {
+    "enabled": true,
+    "format": "markdown-comments",
+    "includeInCode": true
+  }
+}
