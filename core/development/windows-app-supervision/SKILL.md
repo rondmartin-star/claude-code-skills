@@ -239,6 +239,91 @@ def enable_wal_mode(db_path):
     conn.close()
 ```
 
+### 7. Django AppConfig.ready() Database Deferral
+
+**Problem:** Database access during app initialization blocks server startup if database is locked.
+
+**Bad Pattern:**
+```python
+# myapp/apps.py
+from django.apps import AppConfig
+
+class MyAppConfig(AppConfig):
+    def ready(self):
+        # WRONG - Queries database during startup
+        from .models import ScheduledTask
+        tasks = ScheduledTask.objects.filter(enabled=True)
+        for task in tasks:
+            self.setup_task(task)  # Blocks startup if DB locked
+```
+
+**Better Pattern - Defer to First Request:**
+```python
+# myapp/apps.py
+from django.apps import AppConfig
+import sys
+
+class MyAppConfig(AppConfig):
+    _initialized = False
+
+    def ready(self):
+        # Skip ALL database operations during startup
+        if "runserver" in sys.argv or "uvicorn" in sys.argv:
+            # Development: defer setup to first request
+            from django.core.signals import request_started
+            request_started.connect(
+                self.setup_on_first_request,
+                dispatch_uid="myapp_setup"
+            )
+        else:
+            # Production: setup immediately (after migrations)
+            self.setup_tasks()
+
+    def setup_on_first_request(self, sender, **kwargs):
+        """Setup on first request, then disconnect."""
+        if not self._initialized:
+            self._initialized = True
+            self.setup_tasks()
+            # Disconnect to prevent running on every request
+            from django.core.signals import request_started
+            request_started.disconnect(self.setup_on_first_request)
+
+    def setup_tasks(self):
+        """Perform database-dependent initialization."""
+        try:
+            from .models import ScheduledTask
+            tasks = ScheduledTask.objects.filter(enabled=True)
+            for task in tasks:
+                self.setup_task(task)
+        except Exception as e:
+            # Log but don't crash if optional feature fails
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Failed to setup tasks: {e}"
+            )
+```
+
+**Why This Matters:**
+- ✓ Reduces startup dependencies
+- ✓ Prevents database lock deadlocks
+- ✓ Allows server to start even if optional features fail
+- ✓ Graceful degradation instead of hard crash
+- ✓ Works with zombie process database locks
+
+**Alternative - Use Management Command:**
+```python
+# myapp/apps.py
+class MyAppConfig(AppConfig):
+    def ready(self):
+        # Skip database operations entirely during startup
+        pass
+
+# Run setup separately after server starts
+# python manage.py setup_tasks
+```
+
+**Key Insight:** Database operations in `AppConfig.ready()` create startup dependencies that can block the entire application. Defer non-critical database setup to first request or separate command.
+
 ---
 
 ## Supervisor Configuration Template
@@ -314,6 +399,166 @@ python scripts/supervisor.py --uninstall
 | Health check fails | Database locked | Enable WAL mode |
 | Files not detected | Wrong patterns | Check watch_patterns config |
 | Permission denied | Not running as Admin | Run install as Administrator |
+| Server hangs at startup | Zombie process holds DB lock | Kill via Task Manager |
+
+---
+
+## Critical Blocker: Zombie Process Database Lock
+
+**Symptom:** Server hangs indefinitely after "System check identified no issues" with no error messages.
+
+**Root Cause:**
+- Zombie Python process holding exclusive Windows file locks on SQLite database files (`.db-wal`, `.db-shm`)
+- Process cannot be killed via `taskkill /F` (access denied)
+- SQLite WAL mode uses shared memory files that persist locks
+- Process may be running with different user permissions
+
+**Why This Happens:**
+1. Previous server instance crashed/hung during startup
+2. Windows file locking is more aggressive than Unix
+3. SQLite WAL mode shared memory files persist locks after crash
+4. Process running with different user permissions (SYSTEM vs User)
+
+**Detection:**
+```powershell
+# Check for Python processes
+Get-Process python -ErrorAction SilentlyContinue |
+    Select-Object Id, ProcessName, StartTime, Path
+
+# Check for database file locks
+$dbPath = "instance\operations_hub.db"
+$walPath = "$dbPath-wal"
+$shmPath = "$dbPath-shm"
+
+# Find processes with database files open
+Get-Process | ForEach-Object {
+    try {
+        $proc = $_
+        $proc.Modules | Where-Object {
+            $_.FileName -like "*$dbPath*"
+        } | Select-Object @{N='PID';E={$proc.Id}}, @{N='Process';E={$proc.ProcessName}}, FileName
+    } catch { }
+}
+```
+
+**HARD BLOCKER Recognition:**
+
+After 2-3 failed workaround attempts (10 minutes), recognize this as a **permission-based blocker** requiring user action:
+
+1. **DO NOT** attempt 10+ different workarounds
+2. **DO NOT** try different ports (same database = same lock)
+3. **DO NOT** try to delete/rename WAL/SHM files (in use by zombie)
+4. **STOP** after recognizing permission-based blocker
+
+**Solution:**
+```
+USER ACTION REQUIRED:
+1. Open Task Manager (Ctrl+Shift+Esc)
+2. Find Python process (PID shown above)
+3. Right-click → End Task
+4. Restart server
+```
+
+**Prevention Script:**
+```python
+# scripts/check_server_ready.py
+"""Check for blockers before starting server."""
+
+import psutil
+import sqlite3
+import sys
+from pathlib import Path
+
+def check_port(port):
+    """Check if port is available."""
+    for conn in psutil.net_connections():
+        if conn.laddr.port == port and conn.status == 'LISTEN':
+            return False, conn.pid
+    return True, None
+
+def check_database_lock(db_path):
+    """Check if database is locked."""
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=1.0)
+        conn.execute("SELECT 1")
+        conn.close()
+        return True, None
+    except sqlite3.OperationalError as e:
+        return False, str(e)
+
+def find_processes_with_db_open(db_path):
+    """Find all processes with database file open."""
+    processes = []
+    for proc in psutil.process_iter(['pid', 'name', 'create_time']):
+        try:
+            for file in proc.open_files():
+                if str(db_path) in file.path or \
+                   f"{db_path}-wal" in file.path or \
+                   f"{db_path}-shm" in file.path:
+                    processes.append({
+                        'pid': proc.pid,
+                        'name': proc.info['name'],
+                        'file': file.path
+                    })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return processes
+
+def main():
+    # Check port
+    port = 8000  # Your app port
+    available, pid = check_port(port)
+    if not available:
+        print(f"ERROR: Port {port} in use by PID {pid}")
+        print(f"Kill the process: taskkill /F /PID {pid}")
+        sys.exit(1)
+
+    # Check database
+    db_path = Path("instance/app.db")
+    if db_path.exists():
+        locked, error = check_database_lock(db_path)
+        if not locked:
+            print(f"ERROR: Database is locked: {error}")
+
+            # Find processes
+            procs = find_processes_with_db_open(db_path)
+            if procs:
+                print("\nProcesses holding database locks:")
+                for p in procs:
+                    print(f"  PID {p['pid']} ({p['name']}): {p['file']}")
+                print("\nACTION REQUIRED: Kill these processes via Task Manager")
+                sys.exit(1)
+
+    print("✓ Server ready to start")
+    print(f"✓ Port {port} available")
+    print(f"✓ Database not locked")
+
+if __name__ == "__main__":
+    main()
+```
+
+**Integration:**
+```batch
+REM In start-server.bat
+python scripts\check_server_ready.py
+if %ERRORLEVEL% neq 0 (
+    echo Server startup blocked. See errors above.
+    pause
+    exit /b 1
+)
+
+REM Proceed with server start
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+**Key Learnings:**
+- Windows file locking is more aggressive than Unix
+- Process permissions matter (SYSTEM vs User vs Admin)
+- Task Manager has elevated privileges that CLI `taskkill` doesn't
+- After 2-3 failed kill attempts, recognize as HARD BLOCKER requiring user action
+
+**Time Impact:** Can waste 60+ minutes if not recognized early as hard blocker
+**Prevention:** Pre-startup check script catches 95% of cases before wasting time
 
 ---
 

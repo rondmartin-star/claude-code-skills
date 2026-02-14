@@ -705,6 +705,104 @@ if (-not $skipPipUpgrade) {
 
 ---
 
+### Issue 17: MSI Only Packaged .pyc Bytecode Files, Not .py Source Files
+
+**Symptom:** After MSI installation, application directory only contains `.pyc` bytecode files in `__pycache__/` directories, no `.py` source files
+
+**Root Cause:**
+- WiX `heat.exe` harvesting collected only bytecode files
+- Likely due to harvesting from a directory where `.py` files were previously excluded or moved
+- Or heat.exe was run with incorrect file pattern filters
+
+**Diagnosis:**
+```powershell
+# Extract MSI to verify contents
+msiexec /a App.msi /qb TARGETDIR="C:\Temp\Verify"
+
+# Check for .py files
+Get-ChildItem "C:\Temp\Verify" -Recurse -Filter "*.py" | Measure-Object
+# Should return > 0 files
+
+# Check what was actually packaged
+Get-ChildItem "C:\Temp\Verify" -Recurse -Filter "*.pyc" | Measure-Object
+# If .pyc > 0 but .py = 0, this issue is present
+```
+
+**Impact:**
+- Application cannot run (Python needs source files)
+- Debugging is impossible (no source code)
+- Modifications cannot be made
+- **CRITICAL BLOCKER** - Requires full MSI rebuild
+
+**Wrong Approach:**
+```batch
+REM Harvesting from wrong directory or with wrong settings
+heat.exe dir "%SOURCE%\__pycache__" -cg AppComponents -out AppFiles.wxs
+REM This only gets bytecode!
+```
+
+**Correct Solution:**
+```batch
+REM Harvest from source directory, ensuring .py files are included
+REM Verify SOURCE points to actual source code, not build artifacts
+set "SOURCE=%~dp0.."
+
+REM Ensure source directory has .py files
+dir /s /b "%SOURCE%\*.py" | findstr /c:".py" >nul
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: No .py files found in %SOURCE%
+    exit /b 1
+)
+
+REM Harvest with proper file pattern
+heat.exe dir "%SOURCE%" ^
+    -cg ApplicationComponents ^
+    -dr INSTALLFOLDER ^
+    -gg -g1 -sf -srd -sreg ^
+    -var var.SourceDir ^
+    -t ExcludeFilter.xslt ^
+    -out ApplicationFiles.wxs
+
+REM Verify .py files were captured
+findstr /c:".py\"" ApplicationFiles.wxs >nul
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: No .py files in ApplicationFiles.wxs
+    exit /b 1
+)
+```
+
+**Prevention Checklist:**
+- [ ] Verify SOURCE directory contains `.py` files before harvesting
+- [ ] Check `ApplicationFiles.wxs` contains `.py` file references (not just `.pyc`)
+- [ ] Extract and inspect MSI contents before distribution
+- [ ] Test MSI installation on clean machine and verify `.py` files exist
+- [ ] Add automated check to build script (see example above)
+
+**Key Insight:** Windows file locking and Python's bytecode caching can create situations where only `.pyc` files are visible or accessible during harvesting. Always verify source files are present before and after harvest.
+
+**Time Lost:** 2-4 hours (typically discovered during deployment testing)
+**Impact:** Critical - Requires full MSI rebuild and redeployment
+**Detection:** MSI installation completes but application won't start
+
+**Automated Detection:**
+```batch
+REM Add to rebuild-msi.bat after heat.exe
+echo Verifying .py files were harvested...
+findstr /c:".py\"" ApplicationFiles.wxs | find /c ".py" > temp.txt
+set /p COUNT=<temp.txt
+del temp.txt
+
+if %COUNT% LSS 10 (
+    echo WARNING: Only %COUNT% .py files found in ApplicationFiles.wxs
+    echo Expected at least 10 .py files. Check harvest directory.
+    pause
+    exit /b 1
+)
+echo [OK] Found %COUNT% .py files in harvest
+```
+
+---
+
 ## Preventive Checks
 
 Before releasing installer, verify:
@@ -751,7 +849,7 @@ Remove-Item test-venv -Recurse -Force
 
 ---
 
-## Summary of All 16 Critical Issues
+## Summary of All 17 Critical Issues
 
 | # | Issue | Category | Time Lost | Prevention |
 |---|-------|----------|-----------|------------|
@@ -771,11 +869,12 @@ Remove-Item test-venv -Recurse -Force
 | 14 | %~dp0 trailing backslash | Deploy | 45min | Strip backslash |
 | 15 | Non-existent PyPI version | Deploy | 15min | Test requirements.txt |
 | 16 | Pip self-upgrade locking | Deploy | 30min | Use python -m pip |
+| 17 | MSI only packaged .pyc files | Build | 2-4h | Verify source files |
 
-**Total Time Lost:** ~16.5 hours
+**Total Time Lost:** ~19.5 hours
 **With Skill Guidance:** ~2 hours
-**Time Saved:** ~14.5 hours per installer
-**Value Delivered:** Prevents 15+ hours of debugging per installer
+**Time Saved:** ~17.5 hours per installer
+**Value Delivered:** Prevents 17+ hours of debugging per installer
 
 ---
 

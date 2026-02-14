@@ -86,6 +86,147 @@ if GOOGLE_ALLOWED_DOMAIN:
         raise HTTPException(403, f"Only @{GOOGLE_ALLOWED_DOMAIN} accounts allowed")
 ```
 
+### OAuth Auto-Connect to Existing Users
+
+**Critical for Mixed Authentication:** When migrating from local auth to OAuth, or supporting both.
+
+**Problem:**
+User with local account tries OAuth login → 401 Unauthorized error → "An account already exists with this email"
+
+**Root Cause:**
+- Local user account exists (created manually or via password signup)
+- User tries OAuth login for first time
+- OAuth provider returns successful authentication
+- Application doesn't know whether to:
+  - Reject (security concern: different person?)
+  - Auto-link (convenience: same email = same person?)
+
+**Django allauth Example:**
+
+```python
+# operations_hub/settings/base.py
+
+# REQUIRED: Auto-connect OAuth to existing users with matching email
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Supporting settings
+ACCOUNT_UNIQUE_EMAIL = True  # Emails must be unique
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Auto-create users from OAuth
+```
+
+**How It Works:**
+1. User clicks "Sign in with Google"
+2. Google authenticates successfully
+3. OAuth callback returns to application
+4. allauth finds existing user with matching email
+5. **With AUTO_CONNECT=True:** Creates SocialAccount link automatically
+6. User logged in successfully
+7. Future logins use OAuth (no password needed)
+
+**Without This Setting:**
+```
+User tries OAuth → Email matches existing user → 401 Unauthorized
+Error: "An account already exists with this email address"
+```
+
+**Testing Requirements:**
+
+```python
+class OAuthAutoConnectTests(TestCase):
+    """Test OAuth auto-connect to existing users."""
+
+    def test_oauth_login_links_to_existing_user(self):
+        """OAuth auto-connects to existing local user with matching email."""
+        # Create existing user without OAuth
+        user = User.objects.create_user(
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.assertEqual(user.socialaccount_set.count(), 0)
+
+        # Simulate OAuth callback with matching email
+        response = self.client.get('/accounts/google/login/callback/', {
+            'code': 'fake-oauth-code',
+            'state': self.oauth_state
+        })
+
+        # Assert: Social account should be linked
+        user.refresh_from_db()
+        self.assertEqual(user.socialaccount_set.count(), 1)
+        self.assertEqual(user.socialaccount_set.first().provider, 'google')
+
+        # Assert: User can log in
+        self.assertEqual(response.status_code, 302)  # Redirect to dashboard
+        self.assertTrue(response.url.endswith('/dashboard/'))
+
+    def test_oauth_with_new_email_creates_new_user(self):
+        """OAuth with non-existent email creates new user."""
+        # No existing user
+        self.assertEqual(User.objects.count(), 0)
+
+        # OAuth with new email
+        response = self.client.get('/accounts/google/login/callback/', {
+            'code': 'fake-oauth-code',
+            'state': self.oauth_state,
+            'email': 'newuser@example.com'
+        })
+
+        # Assert: New user created
+        self.assertEqual(User.objects.count(), 1)
+        user = User.objects.first()
+        self.assertEqual(user.email, 'newuser@example.com')
+        self.assertEqual(user.socialaccount_set.count(), 1)
+```
+
+**Security Consideration:**
+
+Auto-connect assumes **email ownership = identity**. This is safe when:
+- ✅ Email addresses are verified (OAuth providers verify)
+- ✅ `ACCOUNT_UNIQUE_EMAIL = True` (no duplicate emails)
+- ✅ OAuth provider is trusted (Google, Microsoft, GitHub)
+
+**Do NOT auto-connect if:**
+- ❌ Email verification is optional
+- ❌ Multiple users can share emails
+- ❌ Using untrusted OAuth providers
+
+**Time Saved:** 45 minutes per incident (Operations Hub production bug)
+
+**Integration with First-User Pattern:**
+
+```python
+def handle_oauth_login(email, name, provider):
+    """Handle OAuth login with auto-connect."""
+    # Check if user exists
+    existing_user = User.objects.filter(email=email).first()
+
+    if existing_user:
+        # Auto-connect OAuth to existing user
+        SocialAccount.objects.get_or_create(
+            user=existing_user,
+            provider=provider,
+            defaults={'uid': email}  # Use email as UID
+        )
+        return existing_user
+    else:
+        # Create new user (first user = admin)
+        is_first_user = User.objects.count() == 0
+        user = User.objects.create(
+            email=email,
+            name=name,
+            role=UserRole.ADMIN if is_first_user else UserRole.VIEWER,
+            is_active=True
+        )
+
+        # Create OAuth link
+        SocialAccount.objects.create(
+            user=user,
+            provider=provider,
+            uid=email
+        )
+        return user
+```
+
 ---
 
 ## ⚠️ CRITICAL: Cookie Separation
@@ -200,7 +341,19 @@ def test_first_user_admin_pattern():
 - [ ] Login → callback → dashboard works
 - [ ] Domain restriction rejects other domains
 - [ ] First user is admin, second user is viewer
+- [ ] OAuth auto-connects to existing local users (CRITICAL)
+- [ ] OAuth with new email creates new user
 - [ ] Logout clears session properly
+
+### OAuth Auto-Connect Testing (CRITICAL)
+
+**Must test this scenario:** Existing local user tries OAuth login for first time
+
+- [ ] Create user with local password auth
+- [ ] Attempt OAuth login with same email
+- [ ] Verify: SocialAccount link created automatically
+- [ ] Verify: User logged in successfully (not 401 error)
+- [ ] Verify: Future logins work via OAuth
 
 ---
 

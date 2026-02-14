@@ -58,8 +58,9 @@ description: >
 |-------------|---------------|
 | "requirements", "user stories", "what should it do" | windows-app-requirements |
 | "data model", "database schema", "entities" | windows-app-system-design |
-| "UI", "pages", "screens", "workflows", "logo" | windows-app-ui-design |
+| "UI design", "pages", "screens", "workflows", "logo" | windows-app-ui-design |
 | "code", "implement", "fix", "bug", "package" | windows-app-build |
+| "debug UI", "Playwright", "test UI", "pixel perfect" | windows-app-ui-testing |
 | "OAuth", "Google login", "authentication" | authentication-patterns |
 | "security", "XSS", "SQL injection", "CSRF" | secure-coding-patterns |
 | "auto-start", "supervisor", "watchdog", "MSI" | windows-app-supervision |
@@ -82,6 +83,7 @@ Ask the user to clarify their current phase:
 "/mnt/skills/user/windows-app-ui-design/SKILL.md"         # ~10 KB
 "/mnt/skills/user/windows-app-system-design/SKILL.md"     # ~12 KB
 "/mnt/skills/user/windows-app-build/SKILL.md"             # ~25 KB
+"/mnt/skills/user/windows-app-ui-testing/SKILL.md"        # ~14 KB (Playwright)
 
 # Specialized Skills (load alongside build when relevant)
 "/mnt/skills/user/authentication-patterns/SKILL.md"       # ~4 KB
@@ -142,6 +144,30 @@ Ask the user to clarify their current phase:
 - References specific files or code
 
 **Do NOT load when:** No design work has been done
+
+### windows-app-ui-testing
+**Load when user says:**
+- "Debug the UI" / "UI not matching design"
+- "Pixel perfect" / "Fine-tune layout"
+- "Test the interface" / "E2E tests"
+- "Use Playwright" / "Open in browser"
+- "Visual regression" / "Screenshot testing"
+
+**Do NOT load when:** No UI implementation exists yet
+
+**Key Insight:** Claude Code is bad at pixel-perfect UI when looking at code. Use Playwright to view the **rendered page** instead.
+
+**Visual Iteration Workflow:**
+```
+"Spin out Playwright browser, open localhost and I'll guide you
+from there in terms of UI improvements."
+```
+
+This workflow:
+- Views rendered page (not code)
+- Provides visual context
+- Enables pixel-perfect iteration
+- Catches layout issues invisible in code
 
 ### windows-app-supervision (Process Management + MSI)
 **Load when user says:**
@@ -235,6 +261,141 @@ See `references/parallel-orchestration.md` for:
 - Sub-agent coordination
 - Performance metrics and optimization
 - Error handling strategies
+
+---
+
+## Troubleshooting Blockers: Three Strikes Rule
+
+**Purpose:** Recognize hard blockers early to prevent wasted time on impossible workarounds
+
+**The Problem:**
+When encountering deployment blockers (permission errors, file locks, etc.), it's easy to spend 60+ minutes attempting 10+ different workarounds that all fail for the same root cause.
+
+**The Solution: Three Strikes Rule**
+
+```
+Blocker encountered
+    ↓
+Try workaround #1
+    ↓
+Failed? → Try workaround #2
+    ↓
+Failed? → STOP and analyze
+    ↓
+Is this solvable without user action?
+    ↓
+YES → Try one more targeted approach
+NO  → Document blocker, request user action, WAIT
+```
+
+### Blocker Type Recognition
+
+After 2-3 failed attempts (10 minutes max), categorize the blocker:
+
+| Blocker Type | Characteristics | Time Limit | Resolution |
+|--------------|----------------|------------|------------|
+| **Permission** | "Access denied" errors | 1-2 attempts | User action required |
+| **File Lock** | "In use by another process" | 2-3 attempts | Kill process or reboot |
+| **Configuration** | Settings mismatch | 15-30 min | Code change |
+| **Environment** | System-level issue | Recognize immediately | System change or user action |
+| **Logic** | Code bug | No limit | Fix and test |
+
+### Hard Blocker Decision Tree
+
+**After 2nd failed workaround:**
+
+1. **Analyze WHY it failed:**
+   - Permission issue → Requires elevated access
+   - File lock issue → Requires process termination
+   - Configuration issue → Requires code change
+   - Environment issue → Requires system change
+
+2. **Check if root cause category changed:**
+   - Same category? → STOP, request user action
+   - Different category? → One more targeted attempt
+
+3. **Avoid circular troubleshooting:**
+   - DO NOT try different ports if database is locked (same DB = same lock)
+   - DO NOT try to delete files in use (will always fail)
+   - DO NOT repeat kill commands with different flags (permission is permission)
+
+### Communication Pattern During Troubleshooting
+
+**DO NOT provide running commentary of each attempt.**
+
+Instead:
+1. **First message:** "Investigating [issue]. Will update when resolved or blocked."
+2. **Investigation:** Work silently through diagnostic tree (2-3 attempts max)
+3. **Blocker hit:** "Found blocker: [description]. Need you to: [specific action]"
+4. **Resolution:** "Fixed. Here's what happened and what I changed."
+
+### Example: Database Lock Blocker
+
+**Wrong Approach (60 minutes wasted):**
+1. Try `taskkill /F /PID` → Access denied
+2. Try `WMIC process` → Access denied
+3. Try different port → Same database = same lock
+4. Try to delete WAL files → In use
+5. Try to rename WAL files → In use
+6. Try checkpoint WAL → Lock returns
+7. Try disable app initialization → Still needs DB
+8. Try skip migrations → Can't skip
+9. Try simple WSGI → Same django.setup()
+10. Try 5+ more workarounds... (all fail)
+
+**Correct Approach (5 minutes):**
+1. Try `taskkill /F /PID` → Access denied (Attempt 1)
+2. Try `WMIC process` → Access denied (Attempt 2)
+3. **STOP** - Recognize as **permission-based blocker**
+4. Provide clear user action:
+   ```
+   HARD BLOCKER: Zombie process requires manual termination
+
+   ACTION REQUIRED:
+   1. Open Task Manager (Ctrl+Shift+Esc)
+   2. Find Python process PID 330108
+   3. Right-click → End Task
+   4. Restart server
+
+   This cannot be automated due to Windows process permissions.
+   ```
+
+### Windows-Specific Gotchas
+
+**Remember these Windows behaviors:**
+- File locking is more aggressive than Unix
+- Process permissions are more complex (SYSTEM vs User vs Admin)
+- `taskkill` has different permissions than Task Manager
+- Task Manager has elevated privileges that CLI doesn't
+- SQLite WAL mode creates persistent shared memory locks
+
+### Success Metrics
+
+**Green Flags (Keep Doing):**
+- ✓ Recognize blocker type after 2-3 attempts
+- ✓ Stop when root cause category doesn't change
+- ✓ Provide clear user action instead of continuing
+- ✓ Silent investigation with clear results
+
+**Red Flags (Stop Doing):**
+- ✗ Persisting past 3 failures in same category
+- ✗ Not recognizing permission-based blockers
+- ✗ Attempting same category of solution repeatedly
+- ✗ Excessive status updates during debugging
+
+### Time Impact
+
+**Example from Operations Hub v0.6.0 deployment:**
+- OAuth debugging: 45 min ✓ (appropriate)
+- Zombie process identification: 10 min ✓ (appropriate)
+- Failed workaround attempts: 60 min ✗ (wasted)
+- **Efficiency loss:** 42% of time on impossible workarounds
+
+**With Three Strikes Rule:**
+- OAuth debugging: 45 min
+- Zombie process identification: 10 min
+- Failed workaround attempts: 5 min ✓ (stopped early)
+- **Total time saved:** 55 minutes
 
 ---
 

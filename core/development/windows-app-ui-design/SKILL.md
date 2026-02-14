@@ -12,7 +12,7 @@ description: >
 **Purpose:** Document user interaction patterns and design interface flows
 **Output:** Page inventories, template hierarchies, workflow guides, form specs
 **Size:** ~10 KB
-**Related Skills:** windows-app-requirements (input), windows-app-system-design
+**Related Skills:** windows-app-requirements (input), windows-app-system-design, windows-app-ui-testing (verification)
 
 ---
 
@@ -293,6 +293,77 @@ Before transitioning to **windows-app-build**:
 - [ ] Dropdowns reference configuration options from data model
 
 **If any item fails:** Resolve before loading build skill.
+
+---
+
+## Implementation Verification with Playwright
+
+**Critical Insight:** UI design → code → Playwright verification
+
+After implementing UI designs in the build phase, use **Playwright** to verify the implementation matches the design specifications.
+
+### Why Playwright for UI Verification
+
+**Problem:** Claude Code is bad at pixel-perfect UI when looking at code alone.
+
+**Solution:** Use Playwright to view the **rendered page** in browser, not just code files.
+
+### Visual Iteration Pattern
+
+```
+Design Phase (this skill):
+1. Create page mockups and specifications
+2. Document exact layouts, colors, spacing
+3. Approve design with user
+
+Build Phase (windows-app-build):
+4. Implement HTML/CSS/JS
+5. Load Playwright MCP: /plugin playwright
+6. "Spin out Playwright browser, open localhost"
+7. Compare rendered page to design spec
+8. Make adjustments based on visual feedback
+9. Repeat until pixel-perfect
+```
+
+### When to Load Playwright Skill
+
+**After build implements UI, load `windows-app-ui-testing` skill to:**
+- Verify implementation matches design spec
+- Test responsive layouts (mobile/tablet/desktop)
+- Validate interactive behaviors (dropdowns, modals, forms)
+- Take screenshots for documentation
+- Create visual regression tests
+
+### Example Verification Workflow
+
+```javascript
+// After implementing login page from design spec
+
+await page.goto('http://localhost:3000/login')
+
+// Verify layout matches design
+await expect(page.locator('.login-form')).toHaveCSS('max-width', '400px')
+await expect(page.locator('h1')).toHaveText('Welcome Back')
+
+// Verify colors match brand palette
+await expect(page.locator('.btn-primary')).toHaveCSS(
+  'background-color',
+  'rgb(13, 110, 253)'  // --brand-primary from design
+)
+
+// Take screenshot for design approval
+await page.screenshot({ path: 'login-implemented.png' })
+```
+
+### Handoff to Build Phase
+
+When transitioning to implementation:
+1. **windows-app-build** implements the HTML/CSS/JS
+2. **windows-app-ui-testing** verifies it matches design
+3. Iterate visually using Playwright browser
+4. User approves final implementation
+
+**Key Rule:** Never approve UI implementation without viewing in Playwright browser.
 
 ---
 

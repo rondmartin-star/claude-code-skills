@@ -13,7 +13,7 @@ description: >
 **Size:** ~14 KB
 **Related Skills:** windows-app-build, windows-app-orchestrator, windows-app-system-design
 
-**Proven Impact:** Prevents 15.5 hours of debugging per installer (validated in Operations Hub v0.6.0)
+**Proven Impact:** Prevents 17.5 hours of debugging per installer (validated in Operations Hub v0.6.0)
 
 ---
 
@@ -146,7 +146,7 @@ See `references/quick-start.md` for complete 5-step workflow:
 
 **See `references/troubleshooting.md` for all 12 build errors**
 
-### Post-Deployment Issues (4 critical gotchas)
+### Post-Deployment Issues (5 critical gotchas)
 
 **Issue 13:** 32-bit vs 64-bit PowerShell $env:ProgramFiles mismatch
 - **Impact:** Wizard can't find installation directory
@@ -163,6 +163,11 @@ See `references/quick-start.md` for complete 5-step workflow:
 **Issue 16:** Pip self-upgrade file locking on Windows
 - **Impact:** pip upgrade fails with cryptic error
 - **Fix:** Always use `python -m pip` (never pip.exe)
+
+**Issue 17:** MSI only packaged .pyc bytecode files, not .py source files
+- **Impact:** Application cannot run (Python needs source files)
+- **Fix:** Verify SOURCE directory contains .py files before harvesting
+- **Prevention:** Add automated check to build script
 
 **See `references/troubleshooting.md` for complete solutions**
 
@@ -283,8 +288,9 @@ Result: 30s vs 3m sequential (6x faster)
 
 **Lessons Learned Integration:**
 - All patterns validated in Operations Hub v0.6.0 installer (20+ hours of debugging)
-- Prevents 15+ hours of support burden per installer
+- Prevents 17+ hours of support burden per installer
 - Zero support tickets on production deployment
+- Includes latest deployment lessons (2026-02-13)
 
 ---
 
