@@ -50,20 +50,48 @@ description: >
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
-│   1. LOOK AT THE PAGE, NOT THE CODE                        │
+│   1. USE ASYNC API WITH DJANGO ASGI ⚡ CRITICAL            │
+│      playwright.async_api (not sync_api) for Daphne        │
+│                                                             │
+│   2. LOOK AT THE PAGE, NOT THE CODE                        │
 │      Use Playwright browser to see rendered UI             │
 │                                                             │
-│   2. ITERATE VISUALLY                                       │
+│   3. ITERATE VISUALLY                                       │
 │      Make change → View in browser → Adjust → Repeat       │
 │                                                             │
-│   3. SCREENSHOTS ARE TRUTH                                  │
+│   4. SCREENSHOTS ARE TRUTH                                  │
 │      Take screenshots to verify state                       │
 │                                                             │
-│   4. TEST END-TO-END FLOWS                                  │
+│   5. TEST END-TO-END FLOWS                                  │
 │      Not just unit tests - real user journeys              │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## ⚠️ CRITICAL: Django ASGI + Playwright
+
+**If using Django with ASGI (Daphne, Uvicorn, Hypercorn):**
+
+❌ **DO NOT** use `playwright.sync_api` - causes `SynchronousOnlyOperation` errors
+✅ **USE** `playwright.async_api` - works correctly with ASGI
+
+**Quick Fix:**
+```python
+# ❌ WRONG (breaks with ASGI)
+from playwright.sync_api import Page
+def test_login(page: Page, live_server):
+    page.goto(f"{live_server}/login/")
+
+# ✅ CORRECT (works with ASGI)
+from playwright.async_api import Page
+@pytest.mark.asyncio
+async def test_login(page: Page, async_live_server):
+    await page.goto(f"{async_live_server}/login/")
+```
+
+**Complete Guide:** See `references/django-asgi-playwright.md`
 
 ---
 
@@ -142,7 +170,28 @@ await page.screenshot({ path: 'after.png' })
 
 ### Pattern 2: End-to-End User Flows
 
-**Critical flows to test:**
+**Django ASGI Projects (Python):**
+```python
+import pytest
+from playwright.async_api import Page, expect
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_user_registration_flow(page: Page, async_live_server: str):
+    """User registration flow"""
+    await page.goto(f'{async_live_server}/register')
+
+    # Fill form
+    await page.fill('[name="email"]', 'test@example.com')
+    await page.fill('[name="password"]', 'SecurePass123!')
+    await page.click('button[type="submit"]')
+
+    # Verify redirect and success
+    await expect(page).to_have_url(f'{async_live_server}/dashboard/')
+    await expect(page.locator('.welcome-message')).to_be_visible()
+```
+
+**JavaScript/Node Projects:**
 ```javascript
 // User registration flow
 test('user registration flow', async ({ page }) => {
@@ -157,10 +206,6 @@ test('user registration flow', async ({ page }) => {
   await expect(page).toHaveURL(/.*dashboard/)
   await expect(page.locator('.welcome-message')).toBeVisible()
 })
-
-// Payment processing flow
-// Data submission flow
-// Content publishing flow
 ```
 
 ### Pattern 3: Visual Regression Testing
@@ -567,11 +612,12 @@ PLAYWRIGHT_HEADLESS=1 npm run test:ui
 ## References
 
 **Complete guides:**
-1. **playwright-patterns.md** - Common testing patterns and examples
-2. **visual-regression.md** - Screenshot testing and diff workflows
-3. **memory-optimization.md** - Resource-efficient browser automation
-4. **ci-cd-integration.md** - Automated testing pipelines
-5. **debugging-workflows.md** - Step-by-step troubleshooting guides
+1. **django-asgi-playwright.md** ⚡ Django ASGI + async Playwright (CRITICAL)
+2. **playwright-patterns.md** - Common testing patterns and examples
+3. **visual-regression.md** - Screenshot testing and diff workflows
+4. **memory-optimization.md** - Resource-efficient browser automation
+5. **ci-cd-integration.md** - Automated testing pipelines
+6. **debugging-workflows.md** - Step-by-step troubleshooting guides
 
 ---
 
