@@ -618,11 +618,14 @@ def prioritize_by_criticality(coverage_data: Dict) -> List[Dict]:
 ### With windows-app-ui-testing
 
 ```
-1. UI Testing skill writes E2E tests (Playwright)
+1. UI Testing skill writes E2E tests (Playwright async API for Django ASGI)
 2. Testing Strategy verifies with User-Scenarios methodology
 3. Convergence ensures 3 clean passes
 4. Parallel execution speeds up test suite
 ```
+
+**Django ASGI Projects:** Use `playwright.async_api` (not `sync_api`) to avoid `SynchronousOnlyOperation` errors.
+See `windows-app-ui-testing/references/django-asgi-playwright.md` for complete async patterns.
 
 ### With windows-app-build
 

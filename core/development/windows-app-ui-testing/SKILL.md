@@ -612,12 +612,13 @@ PLAYWRIGHT_HEADLESS=1 npm run test:ui
 ## References
 
 **Complete guides:**
-1. **django-asgi-playwright.md** ⚡ Django ASGI + async Playwright (CRITICAL)
-2. **playwright-patterns.md** - Common testing patterns and examples
-3. **visual-regression.md** - Screenshot testing and diff workflows
-4. **memory-optimization.md** - Resource-efficient browser automation
-5. **ci-cd-integration.md** - Automated testing pipelines
-6. **debugging-workflows.md** - Step-by-step troubleshooting guides
+1. **playwright-stack-guide.md** - Quick reference for all stacks (Django, Node.js, .NET, Ruby)
+2. **django-asgi-playwright.md** ⚡ Django ASGI + async Playwright (CRITICAL)
+3. **playwright-patterns.md** - Common testing patterns and examples
+4. **visual-regression.md** - Screenshot testing and diff workflows
+5. **memory-optimization.md** - Resource-efficient browser automation
+6. **ci-cd-integration.md** - Automated testing pipelines
+7. **debugging-workflows.md** - Step-by-step troubleshooting guides
 
 ---
 
